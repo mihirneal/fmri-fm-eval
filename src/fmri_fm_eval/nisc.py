@@ -295,6 +295,11 @@ def maybe_download_subject(subject: str):
     id_to_url = {
         "32k_fs_LR": "https://figshare.com/ndownloader/files/58130806",
     }
+
+    # filestore isn't created automatically
+    # https://github.com/gallantlab/pycortex/issues/447
+    Path(cortex.database.default_filestore).mkdir(exist_ok=True, parents=True)
+
     if subject not in cortex.db.subjects:
         cortex.download_subject(subject, url=id_to_url.get(subject))
 
