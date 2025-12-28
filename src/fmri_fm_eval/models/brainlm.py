@@ -9,30 +9,26 @@ Supports three model sizes from HuggingFace Hub (vandijklab/brainlm):
 All models use 200 timepoints with sliding window evaluation.
 """
 
-import os
-import sys
+import importlib.resources
 from pathlib import Path
 from typing import Optional
 
+import numpy as np
+import pandas as pd
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch import Tensor
 
 from fmri_fm_eval.models.base import Embeddings
 from fmri_fm_eval.models.registry import register_model
 
-brainlm_repo_path = os.getenv("BRAINLM_REPO_PATH")
-if brainlm_repo_path:
-    sys.path.append(brainlm_repo_path)
-
 try:
     from brainlm_mae.modeling_vit_mae_with_padding import ViTMAEForPreTraining
     from brainlm_mae.modeling_brainlm import BrainLMForPretraining
+    import brainlm_toolkit
 except ImportError as exc:
-    raise ImportError(
-        "BrainLM code not found. Set BRAINLM_REPO_PATH to the BrainLM repo path "
-        "(git clone https://github.com/vandijklab/BrainLM.git)."
-    ) from exc
+    raise ImportError("brainlm not installed. Please install the optional brainlm extra.") from exc
 
 
 # HuggingFace repository
@@ -66,9 +62,7 @@ class BrainLMTransform:
 
     def __init__(
         self,
-        coords_dataset_path: str,
         num_timepoints: int = 200,
-        window_stride: int = 200,
         max_val_to_scale: float = 5.6430855,  # Default for RobustScaler normalization
         repeat_channels: bool = True,
     ):
@@ -76,30 +70,18 @@ class BrainLMTransform:
         Args:
             coords_dataset_path: Path to brain region coordinates dataset for voxel reordering.
             num_timepoints: Number of timepoints per window (BrainLM uses 200).
-            window_stride: Stride for sliding windows (use 200 for non-overlapping).
             max_val_to_scale: Max value for scaling - DATASET-SPECIFIC!
                               Default 5.6430855 is for RobustScaler normalized data.
                               Will be different for z-score normalized data.
         """
         self.num_timepoints = num_timepoints
-        self.window_stride = window_stride
         self.max_val_to_scale = max_val_to_scale
         self.repeat_channels = repeat_channels
 
         # Load voxel reordering indices from coords dataset
-        from datasets import load_from_disk
-
-        coords_ds = load_from_disk(coords_dataset_path)
-        voxel_y_coords = coords_ds["Y"]
-        self.reorder_indices = sorted(
-            range(len(voxel_y_coords)), key=lambda k: voxel_y_coords[k]
-        )
-        voxel_x_coords = coords_ds["X"]
-        voxel_z_coords = coords_ds["Z"]
-        coords = torch.tensor(
-            [voxel_x_coords, voxel_y_coords, voxel_z_coords], dtype=torch.float32
-        ).T
-        self.xyz_vectors = coords[self.reorder_indices]
+        coords_ds = load_a424_coords()  # (424, 4), cols [Index, X, Y, Z]
+        self.reorder_indices = np.argsort(coords_ds["Y"])
+        self.xyz_vectors = torch.from_numpy(coords_ds.loc[:, ["X", "Y", "Z"]].values)
 
     def __call__(self, sample: dict[str, Tensor]) -> dict[str, Tensor] | None:
         bold = sample["bold"]  # (T, D) - z-score normalized data
@@ -107,59 +89,69 @@ class BrainLMTransform:
         std = sample["std"]  # (1, D)
 
         # Convert z-scored data back to raw signal, then apply voxelwise RobustScaler.
-        bold = bold.to(torch.float32) * std.to(torch.float32) + mean.to(torch.float32)
-        median = torch.quantile(bold, 0.5, dim=0, keepdim=True)
-        q1 = torch.quantile(bold, 0.25, dim=0, keepdim=True)
-        q3 = torch.quantile(bold, 0.75, dim=0, keepdim=True)
-        iqr = q3 - q1
-        eps = 1e-6
-        valid_mask = iqr > eps
-        bold = (bold - median) / iqr.clamp(min=eps)
-        bold = bold * valid_mask
+        bold = bold * std + mean
+        bold = robust_scale(bold)
+
+        # TODO: temporal resample?
 
         T, D = bold.shape
 
-        # Create sliding windows with deterministic stride
+        # Pad with zero if too short
+        if T < self.num_timepoints:
+            bold = F.pad(bold, (0, 0, 0, T - self.num_timepoints))
+            T = len(bold)
+
+        # Create sliding windows with non-overlapping stride
         num_windows = T // self.num_timepoints
-        windows = []
+        T = num_windows * self.num_timepoints
+        bold = bold[:T, :].reshape(num_windows, self.num_timepoints, D)
 
-        for i in range(num_windows):
-            start_idx = i * self.window_stride
-            end_idx = start_idx + self.num_timepoints
+        # Transpose [W, T, D] -> [W, D, T]
+        bold = bold.transpose(1, 2)
 
-            if end_idx > T:
-                break  # Discard incomplete windows (no padding)
+        # Reorder voxels by Y coordinate (critical for matching training!)
+        # TODO: reference in original brainlm code?
+        bold = bold[:, self.reorder_indices]
 
-            window = bold[start_idx:end_idx, :]  # (200, 424)
+        # Scale by max_val
+        # TODO: where does this hard-coded value come from? dataset specific
+        # normalization constants are not supported.
+        bold = bold / self.max_val_to_scale
 
-            # Transpose: (T, D) -> (D, T)
-            window = window.T  # (424, 200)
+        # Expand channels dimension [W, C, D, T]
+        if self.repeat_channels:
+            bold = bold.unsqueeze(1).repeat(1, 3, 1, 1)
 
-            # Reorder voxels by Y coordinate (critical for matching training!)
-            window = window[self.reorder_indices, :]  # (424, 200)
-
-            # Scale by max_val (dataset-specific!)
-            window = window / self.max_val_to_scale
-
-            # Repeat for 3 channels (R,G,B) for ViTMAE variants.
-            if self.repeat_channels:
-                window = window.unsqueeze(0).repeat(3, 1, 1)  # (3, 424, 200)
-
-            # Model handles padding (424,200) -> (432,432) internally
-            windows.append(window.contiguous().to(torch.float32))
-
-        if len(windows) == 0:
-            # Not enough timepoints for even one window
-            return None
-
-        # Stack multiple windows from same recording
-        sample["bold"] = (
-            torch.stack(windows) if len(windows) > 1 else windows[0].unsqueeze(0)
-        )
-        # Shape: (num_windows, 3, 424, 200)
-        sample["xyz"] = self.xyz_vectors
+        sample["bold"] = bold  # [W, C, D, T] or [W, D, T]
+        sample["xyz"] = self.xyz_vectors  # [D, 3]
 
         return sample
+
+
+def load_a424_coords() -> pd.DataFrame:
+    """
+    Load BrainLM A424 brain coordinates, shape (424, 4). Columns are ["Index", "X", "Y",
+    "Z"] with indices starting at 1.
+
+    https://github.com/vandijklab/BrainLM/blob/eded39c86c27e03f5ead1d6a14311e92d1305e5e/toolkit/BrainLM_Toolkit.py#L334
+    """
+    files = importlib.resources.files(brainlm_toolkit)
+    with files.joinpath("atlases/A424_Coordinates.dat").open() as f:
+        coords = np.loadtxt(f, dtype=np.float32)
+    coords = pd.DataFrame(coords, columns=["Index", "X", "Y", "Z"])
+    return coords
+
+
+def robust_scale(x: torch.Tensor, eps: float = 1e-6) -> torch.Tensor:
+    T, D = x.shape
+    # do all quantiles at once to avoid sorting multiple times.
+    q = torch.tensor([0.25, 0.5, 0.75], dtype=x.dtype, device=x.device)
+    q1, median, q3 = torch.quantile(x, q, dim=0, keepdim=True)
+    iqr = q3 - q1
+    valid_mask = iqr > eps
+    x = (x - median) / iqr.clamp(min=eps)
+    x = x * valid_mask
+    return x
 
 
 class BrainLMModelWrapper(nn.Module):
@@ -199,7 +191,6 @@ class BrainLMModelWrapper(nn.Module):
     def _forward_vitmae(self, pixel_values: Tensor) -> Embeddings:
         """Forward pass for ViTMAE models (111M, 650M)."""
         # Set mask_ratio to 0 to disable masking during inference
-        original_mask_ratio = self.backbone.vit.embeddings.config.mask_ratio
         self.backbone.vit.embeddings.config.mask_ratio = 0.0
 
         with torch.set_grad_enabled(False):
@@ -274,9 +265,7 @@ def load_brainlm_from_hf(
         Tuple of (loaded model, model_type) where model_type is "vitmae" or "brainlm"
     """
     if variant not in BRAINLM_VARIANTS:
-        raise ValueError(
-            f"Unknown variant {variant}. Choose from: {list(BRAINLM_VARIANTS.keys())}"
-        )
+        raise ValueError(f"Unknown variant {variant}. Choose from: {list(BRAINLM_VARIANTS.keys())}")
 
     subfolder = BRAINLM_VARIANTS[variant]
 
@@ -332,7 +321,6 @@ def create_brainlm_model(
     # Create transform
     transform = BrainLMTransform(
         num_timepoints=200,
-        window_stride=200,
         max_val_to_scale=max_val_to_scale,
         coords_dataset_path=coords_dataset_path,
         repeat_channels=variant in ["111m", "650m"],
@@ -348,9 +336,7 @@ def brainlm_13m(
     cache_dir: Optional[str | Path] = None,
 ) -> tuple[BrainLMTransform, BrainLMModelWrapper]:
     """Legacy BrainLM 13M parameter model (from HuggingFace: vandijklab/brainlm)."""
-    return create_brainlm_model(
-        coords_dataset_path, "13m", max_val_to_scale, cache_dir
-    )
+    return create_brainlm_model(coords_dataset_path, "13m", max_val_to_scale, cache_dir)
 
 
 @register_model
@@ -360,9 +346,7 @@ def brainlm_vitmae_111m(
     cache_dir: Optional[str | Path] = None,
 ) -> tuple[BrainLMTransform, BrainLMModelWrapper]:
     """BrainLM ViT-MAE 111M parameter model (from HuggingFace: vandijklab/brainlm)."""
-    return create_brainlm_model(
-        coords_dataset_path, "111m", max_val_to_scale, cache_dir
-    )
+    return create_brainlm_model(coords_dataset_path, "111m", max_val_to_scale, cache_dir)
 
 
 @register_model
@@ -372,6 +356,4 @@ def brainlm_vitmae_650m(
     cache_dir: Optional[str | Path] = None,
 ) -> tuple[BrainLMTransform, BrainLMModelWrapper]:
     """BrainLM ViT-MAE 650M parameter model (from HuggingFace: vandijklab/brainlm)."""
-    return create_brainlm_model(
-        coords_dataset_path, "650m", max_val_to_scale, cache_dir
-    )
+    return create_brainlm_model(coords_dataset_path, "650m", max_val_to_scale, cache_dir)
