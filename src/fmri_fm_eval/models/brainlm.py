@@ -176,7 +176,7 @@ def resample_to_target_tr(
 ) -> Tensor:
     x = F.interpolate(
         x.T.unsqueeze(0),
-        size=round(tr * len(x) / target_tr),
+        size=round(float(tr) * len(x) / float(target_tr)),
         mode=mode,
     )  # [1, D, T]
     return x.squeeze(0).T
