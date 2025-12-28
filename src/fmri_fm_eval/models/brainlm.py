@@ -41,6 +41,11 @@ BRAINLM_VARIANTS = {
 
 DEFAULT_MAX_VAL_TO_SCALE = 5.6430855
 
+# TODO: check default model TR. paper says datasets are ~0.72s. preprocessing section
+# says input time series are sampled at ~1 hz. but doesn't say if they do resampling, or
+# if they mean 0.72 ~= 1 hz.
+DEFAULT_TR = 1.0
+
 
 class BrainLMTransform:
     """
@@ -51,11 +56,12 @@ class BrainLMTransform:
     Preprocessing steps:
     0. Unnormalize per-voxel z-scored data using mean/std
     1. Apply voxelwise RobustScaler normalization (median/IQR across time)
-    2. Extract sliding windows (200 timepoints each, stride=200)
-    3. Transpose: (T, D) -> (D, T)
-    4. Reorder voxels by Y coordinate
-    5. Scale by max_val (dataset-specific, default for RobustScaler normalization)
-    6. Repeat for 3 channels (R,G,B) for ViTMAE variants
+    2. Temporal resample to target TR, if necessary
+    3. Extract sliding windows (200 timepoints each, stride=200)
+    4. Transpose: (T, D) -> (D, T)
+    5. Reorder voxels by Y coordinate
+    6. Scale by max_val (dataset-specific, default for RobustScaler normalization)
+    7. Repeat for 3 channels (R,G,B) for ViTMAE variants
 
     Output: (num_windows, 3, 424, 200) - model handles padding to (3, 432, 432)
     """
@@ -63,24 +69,27 @@ class BrainLMTransform:
     def __init__(
         self,
         num_timepoints: int = 200,
+        target_tr: float = DEFAULT_TR,
         max_val_to_scale: float = DEFAULT_MAX_VAL_TO_SCALE,  # Default for RobustScaler normalization
         repeat_channels: bool = True,
     ):
         """
         Args:
             num_timepoints: Number of timepoints per window (BrainLM uses 200).
+            target_tr: target temporal resolution
             max_val_to_scale: Max value for scaling - DATASET-SPECIFIC!
                               Default 5.6430855 is for RobustScaler normalized data.
                               Will be different for z-score normalized data.
         """
         self.num_timepoints = num_timepoints
+        self.target_tr = target_tr
         self.max_val_to_scale = max_val_to_scale
         self.repeat_channels = repeat_channels
 
         # Load voxel reordering indices from coords dataset
         coords_ds = load_a424_coords()  # (424, 4), cols [Index, X, Y, Z]
         # TODO: reference in original brainlm code for this reordering?
-        # Is this the correct order for both model variants?
+        # Is this the correct order for both model types?
         self.reorder_indices = np.argsort(coords_ds["Y"])
         self.xyz_vectors = torch.from_numpy(coords_ds.loc[:, ["X", "Y", "Z"]].values)
         self.xyz_vectors = self.xyz_vectors[self.reorder_indices]
@@ -89,18 +98,20 @@ class BrainLMTransform:
         bold = sample["bold"]  # (T, D) - z-score normalized data
         mean = sample["mean"]  # (1, D)
         std = sample["std"]  # (1, D)
+        tr = sample["tr"]  # float - repetition time
 
         # Convert z-scored data back to raw signal, then apply voxelwise RobustScaler.
         bold = bold * std + mean
         bold = robust_scale(bold)
 
-        # TODO: temporal resample?
+        if abs(tr - self.target_tr) >= 0.1:
+            bold = resample_to_target_tr(bold, tr, self.target_tr)
 
         T, D = bold.shape
 
         # Pad with zero if too short
         if T < self.num_timepoints:
-            bold = F.pad(bold, (0, 0, 0, T - self.num_timepoints))
+            bold = F.pad(bold, (0, 0, 0, self.num_timepoints - T))
             T = len(bold)
 
         # Create sliding windows with non-overlapping stride
@@ -157,6 +168,20 @@ def robust_scale(x: torch.Tensor, eps: float = 1e-6) -> torch.Tensor:
     return x
 
 
+def resample_to_target_tr(
+    x: Tensor,
+    tr: float,
+    target_tr: float,
+    mode: str = "linear",
+) -> Tensor:
+    x = F.interpolate(
+        x.T.unsqueeze(0),
+        size=round(tr * len(x) / target_tr),
+        mode=mode,
+    )  # [1, D, T]
+    return x.squeeze(0).T
+
+
 class BrainLMModelWrapper(nn.Module):
     """
     Wrapper for BrainLM encoder model.
@@ -182,7 +207,6 @@ class BrainLMModelWrapper(nn.Module):
         self.backbone = backbone
         self.model_type = model_type
         # Set mask_ratio to 0 to disable masking during inference
-        # TODO: check that setting this like this works?
         self.backbone.vit.embeddings.config.mask_ratio = 0.0
 
     def forward(self, batch: dict[str, Tensor]) -> Embeddings:
@@ -199,6 +223,10 @@ class BrainLMModelWrapper(nn.Module):
             sequence_output = self._forward_brainlm(pixel_values, xyz_vectors)
 
         # Unflatten windows
+        # Sequence lengths:
+        #   - 13m: 4241 (1 + 424 * 10)
+        #   - 111m: 730 (1 + (432 / 16)^2)
+        #   - 650m: 962 (1 + (434 / 14)^2)
         _, N, C = sequence_output.shape
         sequence_output = sequence_output.reshape(B, W, N, C)
 
@@ -224,11 +252,8 @@ class BrainLMModelWrapper(nn.Module):
         self, pixel_values: torch.Tensor, xyz_vectors: torch.Tensor
     ) -> torch.Tensor:
         """Forward pass for legacy BrainLM model (13M)."""
-        B, C, D, T = pixel_values.shape
-        signal_vectors = pixel_values[:, 0, :, :]
-
         outputs = self.backbone.vit(
-            signal_vectors=signal_vectors,
+            signal_vectors=pixel_values[:, 0, :, :],  # [B, C, D, T]
             xyz_vectors=xyz_vectors,
             output_hidden_states=True,
             return_dict=True,
