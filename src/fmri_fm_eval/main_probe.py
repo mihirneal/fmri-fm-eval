@@ -45,7 +45,8 @@ def main(args: DictConfig):
     device = torch.device(args.device)
     ut.random_seed(args.seed)
 
-    args.name = f"{args.name_prefix}/{args.model}/{args.representation}/{args.dataset}"
+    if not args.get("name"):
+        args.name = f"{args.name_prefix}/{args.model}/{args.representation}/{args.dataset}"
     args.output_dir = f"{args.output_root}/{args.name}"
     output_dir = Path(args.output_dir)
 
@@ -98,6 +99,10 @@ def main(args: DictConfig):
     args.task = dataset_dict["train"].__task__
     for split, ds in dataset_dict.items():
         print(f"{split} (n={len(ds)}):\n{ds}\n")
+
+    if hasattr(transform, "fit"):
+        print("fitting transform on training dataset")
+        transform.fit(dataset_dict["train"])
 
     for split, ds in dataset_dict.items():
         ds.set_transform(transform)

@@ -7,9 +7,14 @@ Supports three model sizes from HuggingFace Hub (vandijklab/brainlm):
 - brainlm_vitmae_650m: Vision Transformer MAE 650M parameter model
 
 All models use 200 timepoints with sliding window evaluation.
+
+References:
+https://github.com/vandijklab/BrainLM/blob/eded39c86c27e03f5ead1d6a14311e92d1305e5e/brainlm_tutorial.ipynb
+https://github.com/vandijklab/BrainLM/blob/eded39c86c27e03f5ead1d6a14311e92d1305e5e/toolkit/BrainLM_Toolkit.py
 """
 
 import importlib.resources
+from typing import Iterable
 
 import numpy as np
 import pandas as pd
@@ -17,6 +22,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
+from tqdm import tqdm
 
 from fmri_fm_eval.models.base import Embeddings
 from fmri_fm_eval.models.registry import register_model
@@ -39,12 +45,13 @@ BRAINLM_VARIANTS = {
     "650m": "vitmae_650M",
 }
 
+# From brainlm_tutorial.ipynb.
+# TODO: How was this value computed? Should it be estimated on the training dataset?
 DEFAULT_MAX_VAL_TO_SCALE = 5.6430855
 
-# TODO: check default model TR. paper says datasets are ~0.72s. preprocessing section
-# says input time series are sampled at ~1 hz. but doesn't say if they do resampling, or
-# if they mean 0.72 ~= 1 hz.
-DEFAULT_TR = 1.0
+# Default UKBB TR. BrainLM does not apply any temporal resampling during data
+# preprocessing.
+DEFAULT_TR = 0.735
 
 
 class BrainLMTransform:
@@ -56,11 +63,11 @@ class BrainLMTransform:
     Preprocessing steps:
     0. Unnormalize per-voxel z-scored data using mean/std
     1. Apply voxelwise RobustScaler normalization (median/IQR across time)
-    2. Temporal resample to target TR, if necessary
-    3. Extract sliding windows (200 timepoints each, stride=200)
-    4. Transpose: (T, D) -> (D, T)
-    5. Reorder voxels by Y coordinate
-    6. Scale by max_val (dataset-specific, default for RobustScaler normalization)
+    2. Scale by max_val (dataset-specific, default for RobustScaler normalization)
+    3. Temporal resample to target TR, if necessary
+    4. Extract sliding windows (200 timepoints each, stride=200)
+    5. Transpose: (T, D) -> (D, T)
+    6. Reorder voxels by Y coordinate
     7. Repeat for 3 channels (R,G,B) for ViTMAE variants
 
     Output: (num_windows, 3, 424, 200) - model handles padding to (3, 432, 432)
@@ -70,7 +77,7 @@ class BrainLMTransform:
         self,
         num_timepoints: int = 200,
         target_tr: float = DEFAULT_TR,
-        max_val_to_scale: float = DEFAULT_MAX_VAL_TO_SCALE,  # Default for RobustScaler normalization
+        max_val_to_scale: float = DEFAULT_MAX_VAL_TO_SCALE,
         repeat_channels: bool = True,
     ):
         """
@@ -88,11 +95,16 @@ class BrainLMTransform:
 
         # Load voxel reordering indices from coords dataset
         coords_ds = load_a424_coords()  # (424, 4), cols [Index, X, Y, Z]
-        # TODO: reference in original brainlm code for this reordering?
-        # Is this the correct order for both model types?
+
+        # For legacy 13m model, ROI order doesn't matter. For new models, the ROI order
+        # is important since neighboring ROIs are patched together.
+        # See brainlm_tutorial.ipynb.
         self.reorder_indices = np.argsort(coords_ds["Y"])
         self.xyz_vectors = torch.from_numpy(coords_ds.loc[:, ["X", "Y", "Z"]].values)
         self.xyz_vectors = self.xyz_vectors[self.reorder_indices]
+
+        # Global dataset stats to be computed on the training dataset
+        self.global_stats_ = None
 
     def __call__(self, sample: dict[str, Tensor]) -> dict[str, Tensor] | None:
         bold = sample["bold"]  # (T, D) - z-score normalized data
@@ -100,9 +112,17 @@ class BrainLMTransform:
         std = sample["std"]  # (1, D)
         tr = sample["tr"]  # float - repetition time
 
-        # Convert z-scored data back to raw signal, then apply voxelwise RobustScaler.
+        # Convert z-scored data back to raw signal
         bold = bold * std + mean
-        bold = robust_scale(bold)
+
+        # Per-ROI robust scaling with stats computed over entire dataset
+        # Following BrainLM "Voxelwise_RobustScaler_Normalized_Recording"
+        assert self.global_stats_ is not None, "global_stats_ is None; call fit()"
+        median, iqr = self.global_stats_
+        bold = (bold - median) / (iqr + 1e-6)
+
+        # Scale by max value
+        bold = bold / self.max_val_to_scale
 
         if abs(tr - self.target_tr) >= 0.1:
             bold = resample_to_target_tr(bold, tr, self.target_tr)
@@ -123,13 +143,7 @@ class BrainLMTransform:
         bold = bold.transpose(1, 2)
 
         # Reorder voxels by Y coordinate (critical for matching training!)
-        # TODO: reference in original brainlm code?
         bold = bold[:, self.reorder_indices]
-
-        # Scale by max_val
-        # TODO: where does this hard-coded value come from? dataset specific
-        # normalization constants are not supported.
-        bold = bold / self.max_val_to_scale
 
         # Expand channels dimension [W, C, D, T]
         bold = bold.unsqueeze(1)
@@ -140,6 +154,26 @@ class BrainLMTransform:
         sample["xyz"] = self.xyz_vectors.repeat(num_windows, 1, 1)  # [W, D, 3]
 
         return sample
+
+    def fit(self, train_dataset: Iterable[dict[str, Tensor]]) -> None:
+        """
+        Precompute global stats on training dataset
+        """
+        all_bold = []
+        for sample in tqdm(train_dataset):
+            bold = sample["bold"]  # (T, D) - z-score normalized data
+            mean = sample["mean"]  # (1, D)
+            std = sample["std"]  # (1, D)
+            bold = bold * std + mean
+            all_bold.append(bold)
+        all_bold = torch.cat(all_bold)
+
+        mean = all_bold.mean(dim=0)
+        std = all_bold.std(dim=0)
+        q = torch.tensor([0.25, 0.5, 0.75], dtype=all_bold.dtype)
+        q1, median, q3 = torch.quantile(all_bold, q, dim=0)
+        iqr = q3 - q1
+        self.global_stats_ = median, iqr
 
 
 def load_a424_coords() -> pd.DataFrame:
@@ -154,18 +188,6 @@ def load_a424_coords() -> pd.DataFrame:
         coords = np.loadtxt(f, dtype=np.float32)
     coords = pd.DataFrame(coords, columns=["Index", "X", "Y", "Z"])
     return coords
-
-
-def robust_scale(x: torch.Tensor, eps: float = 1e-6) -> torch.Tensor:
-    T, D = x.shape
-    # do all quantiles at once to avoid sorting multiple times.
-    q = torch.tensor([0.25, 0.5, 0.75], dtype=x.dtype, device=x.device)
-    q1, median, q3 = torch.quantile(x, q, dim=0, keepdim=True)
-    iqr = q3 - q1
-    valid_mask = iqr > eps
-    x = (x - median) / iqr.clamp(min=eps)
-    x = x * valid_mask
-    return x
 
 
 def resample_to_target_tr(
@@ -296,15 +318,14 @@ def load_brainlm_from_hf(
 
 def create_brainlm_model(
     variant: str = "111m",
-    max_val_to_scale: float = DEFAULT_MAX_VAL_TO_SCALE,
+    **kwargs,
 ) -> tuple[BrainLMTransform, BrainLMModelWrapper]:
     """
     Create BrainLM model and transform (loads from HuggingFace Hub: vandijklab/brainlm).
 
     Args:
         variant: Model variant - one of "13m", "111m", "650m"
-        max_val_to_scale: Max value for scaling - dataset-specific!
-                          Default 5.6430855 is for RobustScaler normalized data.
+        **kwargs: passed on to transform
 
     Returns:
         Tuple of (transform, model wrapper)
@@ -318,32 +339,26 @@ def create_brainlm_model(
     # Create transform
     transform = BrainLMTransform(
         num_timepoints=200,
-        max_val_to_scale=max_val_to_scale,
         repeat_channels=variant in ["111m", "650m"],
+        **kwargs,
     )
 
     return transform, model
 
 
 @register_model
-def brainlm_13m(
-    max_val_to_scale: float = DEFAULT_MAX_VAL_TO_SCALE,
-) -> tuple[BrainLMTransform, BrainLMModelWrapper]:
+def brainlm_13m(**kwargs) -> tuple[BrainLMTransform, BrainLMModelWrapper]:
     """Legacy BrainLM 13M parameter model (from HuggingFace: vandijklab/brainlm)."""
-    return create_brainlm_model("13m", max_val_to_scale)
+    return create_brainlm_model("13m", **kwargs)
 
 
 @register_model
-def brainlm_vitmae_111m(
-    max_val_to_scale: float = DEFAULT_MAX_VAL_TO_SCALE,
-) -> tuple[BrainLMTransform, BrainLMModelWrapper]:
+def brainlm_vitmae_111m(**kwargs) -> tuple[BrainLMTransform, BrainLMModelWrapper]:
     """BrainLM ViT-MAE 111M parameter model (from HuggingFace: vandijklab/brainlm)."""
-    return create_brainlm_model("111m", max_val_to_scale)
+    return create_brainlm_model("111m", **kwargs)
 
 
 @register_model
-def brainlm_vitmae_650m(
-    max_val_to_scale: float = DEFAULT_MAX_VAL_TO_SCALE,
-) -> tuple[BrainLMTransform, BrainLMModelWrapper]:
+def brainlm_vitmae_650m(**kwargs) -> tuple[BrainLMTransform, BrainLMModelWrapper]:
     """BrainLM ViT-MAE 650M parameter model (from HuggingFace: vandijklab/brainlm)."""
-    return create_brainlm_model("650m", max_val_to_scale)
+    return create_brainlm_model("650m", **kwargs)

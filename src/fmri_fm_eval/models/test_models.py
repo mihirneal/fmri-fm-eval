@@ -32,6 +32,10 @@ def test_model(name: str, n_samples: int):
         if transform is not None:
             sample = transform(sample)
         batch.append(sample)
+
+    if hasattr(transform, "fit"):
+        transform.fit(batch)
+
     batch = default_collate(batch)
 
     cls_embeds, reg_embeds, patch_embeds = model(batch)
