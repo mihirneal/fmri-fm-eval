@@ -129,9 +129,10 @@ class BrainLMTransform:
 
         T, D = bold.shape
 
-        # Pad with zero if too short
+        # Pad with mean if too short
         if T < self.num_timepoints:
-            bold = F.pad(bold, (0, 0, 0, self.num_timepoints - T))
+            pad_size = self.num_timepoints - T
+            bold = torch.cat([bold, bold.mean(dim=0).repeat(pad_size, 1)])
             T = len(bold)
 
         # Create sliding windows with non-overlapping stride
