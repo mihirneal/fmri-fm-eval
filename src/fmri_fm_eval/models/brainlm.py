@@ -169,8 +169,6 @@ class BrainLMTransform:
             all_bold.append(bold)
         all_bold = torch.cat(all_bold)
 
-        mean = all_bold.mean(dim=0)
-        std = all_bold.std(dim=0)
         q = torch.tensor([0.25, 0.5, 0.75], dtype=all_bold.dtype)
         q1, median, q3 = torch.quantile(all_bold, q, dim=0)
         iqr = q3 - q1
