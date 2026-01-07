@@ -1,0 +1,30 @@
+{
+  "pretrain": [
+    "batch-00",
+    "batch-01",
+    "batch-02",
+    "batch-03",
+    "batch-04",
+    "batch-05",
+    "batch-06",
+    "batch-07",
+    "batch-08",
+    "batch-09",
+    "batch-10",
+    "batch-11",
+    "batch-12",
+    "batch-13"
+  ],
+  "eval_train": [
+    "batch-14",
+    "batch-15",
+    "batch-16",
+    "batch-17"
+  ],
+  "eval_val": [
+    "batch-18"
+  ],
+  "eval_test": [
+    "batch-19"
+  ]
+}

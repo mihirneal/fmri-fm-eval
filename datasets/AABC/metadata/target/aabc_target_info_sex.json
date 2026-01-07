@@ -1,0 +1,12 @@
+{
+    "target": "sex",
+    "na_count": 0,
+    "classes": [
+        "F",
+        "M"
+    ],
+    "label_counts": [
+        712,
+        536
+    ]
+}
