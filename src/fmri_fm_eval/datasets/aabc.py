@@ -1,12 +1,11 @@
 import os
-from pathlib import Path
 
 import datasets as hfds
 
 from fmri_fm_eval.datasets.base import HFDataset
 from fmri_fm_eval.datasets.registry import register_dataset
 
-AABC_ROOT = str(Path(__file__).parents[3] / "datasets" / "AABC")
+AABC_ROOT = os.getenv("AABC_ROOT", "/teamspace/studios/this_studio/aabc-eval")
 
 AABC_TARGET_MAP_DICT = {
     # Demographics
@@ -38,7 +37,7 @@ AABC_TARGET_MAP_DICT = {
 def _create_aabc(space: str, target: str, **kwargs):
     target_key = "sub"
     target_map_path = AABC_TARGET_MAP_DICT[target]
-    target_map_path = f"{AABC_ROOT}/metadata/targets/{target_map_path}"
+    target_map_path = f"{AABC_ROOT}/targets/{target_map_path}"
 
     dataset_dict = {}
     splits = ["train", "validation", "test"]

@@ -35,12 +35,13 @@ _logger = logging.getLogger(__name__)
 ROOT = Path(__file__).parents[1]
 AABC_ROOT = Path(os.getenv("AABC_ROOT", "/teamspace/studios/this_studio/AABC_data"))
 
-# Evaluation set uses batches 14-19 (6 batches, separate from pretraining)
-# Train: batches 14-17 (4 batches, ~250 subjects, 67% of eval)
-# Val: batch 18 (1 batch, ~64 subjects, 17% of eval)
-# Test: batch 19 (1 batch, ~64 subjects, 17% of eval)
+# Evaluation set uses batches 17-19 (3 batches, similar size to HCPYA ~653 samples)
+# Batches 0-16 are reserved for pretraining
+# Train: batch 17 (1 batch, ~62 subjects, 33% of eval)
+# Val: batch 18 (1 batch, ~64 subjects, 34% of eval)
+# Test: batch 19 (1 batch, ~64 subjects, 33% of eval)
 SUB_BATCH_SPLITS = {
-    "train": list(range(14, 18)),  # batches 14, 15, 16, 17
+    "train": [17],
     "validation": [18],
     "test": [19],
 }
