@@ -33,7 +33,7 @@ HCPYA_TASK21_TRIAL_TYPES = {
 
 
 def _create_hcpya(
-    dataset: str,
+    name: str,
     space: str,
     target_key: str | None = None,
     **kwargs,
@@ -41,7 +41,7 @@ def _create_hcpya(
     dataset_dict = {}
     splits = ["train", "validation", "test"]
     for split in splits:
-        url = f"{HCPYA_ROOT}/hcpya-{dataset}.{space}.arrow/{split}"
+        url = f"{HCPYA_ROOT}/hcpya-{name}.{space}.arrow/{split}"
         dataset = hfds.load_dataset("arrow", data_files=f"{url}/*.arrow", split="train", **kwargs)
         dataset = HFDataset(dataset, target_key=target_key)
         dataset_dict[split] = dataset
