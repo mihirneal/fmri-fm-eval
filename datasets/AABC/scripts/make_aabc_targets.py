@@ -100,7 +100,7 @@ def main():
     df = df.drop_duplicates(subset="sub", keep="first")
     df = df.set_index("sub")
 
-    outdir = ROOT / "metadata/target"
+    outdir = ROOT / "metadata/targets"
     outdir.mkdir(exist_ok=True, parents=True)
 
     for target in TARGETS:
