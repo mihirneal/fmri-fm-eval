@@ -9,22 +9,18 @@
     "batch-06",
     "batch-07",
     "batch-08",
-    "batch-09",
+    "batch-09"
+  ],
+  "eval_pool": [
     "batch-10",
     "batch-11",
     "batch-12",
-    "batch-13"
-  ],
-  "eval_train": [
+    "batch-13",
     "batch-14",
     "batch-15",
     "batch-16",
-    "batch-17"
-  ],
-  "eval_val": [
-    "batch-18"
-  ],
-  "eval_test": [
+    "batch-17",
+    "batch-18",
     "batch-19"
   ]
 }
