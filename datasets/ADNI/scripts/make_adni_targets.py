@@ -1,0 +1,301 @@
+"""Generate target maps for ADNI evaluation dataset.
+
+Creates JSON files mapping sample keys to target labels for:
+- Demographics: sex (binary), age (binned)
+- Cognitive scores: mmse (binned), cdrsb (binned)
+- Clinical classification: diagnosis (3-class), ad_vs_cn (binary), pmci_vs_smci (binary)
+
+Sample key format: {PTID}_{SCANDATE} (e.g., 168_S_6049_2020-10-12)
+"""
+import json
+import logging
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+logging.basicConfig(
+    format="[%(levelname)s %(asctime)s]: %(message)s",
+    level=logging.INFO,
+    datefmt="%y-%m-%d %H:%M:%S",
+)
+
+_logger = logging.getLogger(__name__)
+
+ROOT = Path(__file__).parents[1]
+ADNI_CSV_PATH = Path("/teamspace/studios/this_studio/ADNI_fmriprep/valid_adni_benchmark_split_final.csv")
+
+# Gender mapping (classification target)
+GENDER_MAP = {"Female": 0, "Male": 1}
+GENDER_CLASSES = ["Female", "Male"]
+
+# Diagnosis mapping (3-class)
+DIAGNOSIS_MAP = {"CN": 0, "MCI": 1, "Dementia": 2}
+DIAGNOSIS_CLASSES = ["CN", "MCI", "Dementia"]
+
+# Binary classification mappings
+AD_VS_CN_MAP = {"CN": 0, "Dementia": 1}
+AD_VS_CN_CLASSES = ["CN", "Dementia"]
+
+PMCI_VS_SMCI_MAP = {"sMCI": 0, "pMCI": 1}
+PMCI_VS_SMCI_CLASSES = ["sMCI", "pMCI"]
+
+# Quantile binning with balance check
+PRIMARY_BINS = 4
+FALLBACK_BINS = 3
+MIN_BIN_FRACTION = 0.20
+
+# Per-target bin overrides (use exact bin count, skip balance rule)
+BIN_OVERRIDES = {
+    "age": 4,
+    "mmse": 3,  # MMSE is heavily skewed toward high scores
+    "cdrsb": 3,  # CDRSB is heavily skewed toward low scores
+}
+
+# Targets configuration
+CONTINUOUS_TARGETS = ["age", "mmse", "cdrsb"]
+CATEGORICAL_TARGETS = ["sex", "diagnosis", "ad_vs_cn", "pmci_vs_smci"]
+
+# Column mappings
+COLUMN_MAP = {
+    "age": "AGE",
+    "mmse": "Score_MMSE",
+    "cdrsb": "Score_CDRSB",
+    "sex": "PTGENDER",
+    "diagnosis": "Current_DX",
+    "ad_vs_cn": "Label_Diag_AD_vs_CN",
+    "pmci_vs_smci": "Label_Prog_pMCI_vs_sMCI",
+}
+
+
+def quantize(series: pd.Series, num_bins: int):
+    """Quantile binning for continuous variables."""
+    values = series.values
+
+    qs = np.arange(1, num_bins) / num_bins
+    bins = np.nanquantile(values, qs)
+    bins = np.round(bins, 3).tolist()
+
+    # right=True produces more balanced splits, consistent with pandas qcut
+    targets = np.digitize(values, bins, right=True)
+    targets = pd.Series(targets, index=series.index)
+    counts = np.bincount(targets, minlength=num_bins)
+    return targets, bins, counts
+
+
+def quantize_with_balance(series: pd.Series):
+    """Quantize with automatic fallback if bins are unbalanced."""
+    targets, bins, counts = quantize(series, num_bins=PRIMARY_BINS)
+    total = counts.sum()
+    if total == 0 or (counts / total).min() < MIN_BIN_FRACTION:
+        targets, bins, counts = quantize(series, num_bins=FALLBACK_BINS)
+        num_bins = FALLBACK_BINS
+    else:
+        num_bins = PRIMARY_BINS
+    return targets, bins, counts, num_bins
+
+
+def build_bin_stats(values: pd.Series, labels: pd.Series, num_bins: int):
+    """Build statistics for each bin."""
+    stats = []
+    total = int(values.shape[0])
+    for bin_idx in range(num_bins):
+        bin_vals = values[labels == bin_idx]
+        count = int(bin_vals.shape[0])
+        stats.append(
+            {
+                "bin": bin_idx,
+                "count": count,
+                "fraction": round(count / total, 4) if total else 0.0,
+                "min": float(bin_vals.min()) if count else None,
+                "max": float(bin_vals.max()) if count else None,
+            }
+        )
+    return stats
+
+
+def main():
+    # Load ADNI phenotypic data
+    df = pd.read_csv(ADNI_CSV_PATH)
+
+    # Create sample key: PTID_SCANDATE
+    df["sample_key"] = df["PTID"] + "_" + df["SCANDATE_Imaging"]
+    df = df.set_index("sample_key")
+
+    _logger.info("Loaded %d samples from %s", len(df), ADNI_CSV_PATH)
+
+    outdir = ROOT / "metadata/targets"
+    outdir.mkdir(exist_ok=True, parents=True)
+
+    # Process continuous targets (binned)
+    for target in CONTINUOUS_TARGETS:
+        col = COLUMN_MAP[target]
+        outpath = outdir / f"adni_target_map_{target}.json"
+        infopath = outdir / f"adni_target_info_{target}.json"
+
+        series = df[col]
+        na_mask = series.isna()
+        series = series.loc[~na_mask]
+        na_count = int(na_mask.sum())
+
+        numeric = series.astype(float)
+        override_bins = BIN_OVERRIDES.get(target)
+        if override_bins is not None:
+            targets, bins, counts = quantize(numeric, num_bins=override_bins)
+            num_bins = override_bins
+        else:
+            targets, bins, counts, num_bins = quantize_with_balance(numeric)
+
+        bin_stats = build_bin_stats(numeric, targets, num_bins)
+        info = {
+            "target": target,
+            "column": col,
+            "na_count": na_count,
+            "subjects_total": int(df.shape[0]),
+            "bins": bins,
+            "label_counts": counts.tolist(),
+            "num_bins": num_bins,
+            "bin_stats": bin_stats,
+        }
+
+        targets_dict = targets.to_dict()
+        _logger.info("%s: %s", target, json.dumps(info, indent=None))
+
+        with outpath.open("w") as f:
+            json.dump(targets_dict, f, indent=4)
+
+        with infopath.open("w") as f:
+            json.dump(info, f, indent=4)
+
+    # Process sex (binary)
+    target = "sex"
+    col = COLUMN_MAP[target]
+    outpath = outdir / f"adni_target_map_{target}.json"
+    infopath = outdir / f"adni_target_info_{target}.json"
+
+    series = df[col]
+    na_mask = series.isna()
+    series = series.loc[~na_mask]
+    na_count = int(na_mask.sum())
+
+    targets = series.map(GENDER_MAP)
+    counts = targets.value_counts().sort_index().tolist()
+    info = {
+        "target": target,
+        "column": col,
+        "na_count": na_count,
+        "subjects_total": int(df.shape[0]),
+        "classes": GENDER_CLASSES,
+        "label_counts": counts,
+    }
+
+    targets_dict = targets.to_dict()
+    _logger.info("%s: %s", target, json.dumps(info, indent=None))
+
+    with outpath.open("w") as f:
+        json.dump(targets_dict, f, indent=4)
+
+    with infopath.open("w") as f:
+        json.dump(info, f, indent=4)
+
+    # Process diagnosis (3-class)
+    target = "diagnosis"
+    col = COLUMN_MAP[target]
+    outpath = outdir / f"adni_target_map_{target}.json"
+    infopath = outdir / f"adni_target_info_{target}.json"
+
+    series = df[col]
+    na_mask = series.isna()
+    series = series.loc[~na_mask]
+    na_count = int(na_mask.sum())
+
+    targets = series.map(DIAGNOSIS_MAP)
+    counts = targets.value_counts().sort_index().tolist()
+    info = {
+        "target": target,
+        "column": col,
+        "na_count": na_count,
+        "subjects_total": int(df.shape[0]),
+        "classes": DIAGNOSIS_CLASSES,
+        "label_counts": counts,
+    }
+
+    targets_dict = targets.to_dict()
+    _logger.info("%s: %s", target, json.dumps(info, indent=None))
+
+    with outpath.open("w") as f:
+        json.dump(targets_dict, f, indent=4)
+
+    with infopath.open("w") as f:
+        json.dump(info, f, indent=4)
+
+    # Process ad_vs_cn (binary, excludes MCI)
+    target = "ad_vs_cn"
+    col = COLUMN_MAP[target]
+    outpath = outdir / f"adni_target_map_{target}.json"
+    infopath = outdir / f"adni_target_info_{target}.json"
+
+    series = df[col]
+    na_mask = series.isna()
+    series = series.loc[~na_mask]
+    na_count = int(na_mask.sum())
+
+    targets = series.map(AD_VS_CN_MAP)
+    counts = targets.value_counts().sort_index().tolist()
+    info = {
+        "target": target,
+        "column": col,
+        "na_count": na_count,
+        "subjects_total": int(df.shape[0]),
+        "classes": AD_VS_CN_CLASSES,
+        "label_counts": counts,
+        "note": "Excludes MCI samples (only CN vs Dementia)",
+    }
+
+    targets_dict = targets.to_dict()
+    _logger.info("%s: %s", target, json.dumps(info, indent=None))
+
+    with outpath.open("w") as f:
+        json.dump(targets_dict, f, indent=4)
+
+    with infopath.open("w") as f:
+        json.dump(info, f, indent=4)
+
+    # Process pmci_vs_smci (binary, MCI subset only)
+    target = "pmci_vs_smci"
+    col = COLUMN_MAP[target]
+    outpath = outdir / f"adni_target_map_{target}.json"
+    infopath = outdir / f"adni_target_info_{target}.json"
+
+    series = df[col]
+    na_mask = series.isna()
+    series = series.loc[~na_mask]
+    na_count = int(na_mask.sum())
+
+    targets = series.map(PMCI_VS_SMCI_MAP)
+    counts = targets.value_counts().sort_index().tolist()
+    info = {
+        "target": target,
+        "column": col,
+        "na_count": na_count,
+        "subjects_total": int(df.shape[0]),
+        "classes": PMCI_VS_SMCI_CLASSES,
+        "label_counts": counts,
+        "note": "MCI subset only (progressive vs stable MCI)",
+    }
+
+    targets_dict = targets.to_dict()
+    _logger.info("%s: %s", target, json.dumps(info, indent=None))
+
+    with outpath.open("w") as f:
+        json.dump(targets_dict, f, indent=4)
+
+    with infopath.open("w") as f:
+        json.dump(info, f, indent=4)
+
+    total_targets = len(CONTINUOUS_TARGETS) + len(CATEGORICAL_TARGETS)
+    _logger.info("Created %d target files in %s", total_targets, outdir)
+
+
+if __name__ == "__main__":
+    main()
