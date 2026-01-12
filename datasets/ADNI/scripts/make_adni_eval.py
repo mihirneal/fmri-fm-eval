@@ -6,10 +6,15 @@ This script creates HuggingFace Arrow datasets for ADNI resting-state fMRI:
 - Uses existing Train/Val/Test split from metadata JSON
 
 Supports parcellations: schaefer400, schaefer400_tians3, flat, a424, mni, mni_cortex
+
+Environment variables:
+- ADNI_FMRIPREP_ROOT: Path to ADNI fMRIPrep root directory
+- ADNI_CURATION_JSON: Path to ADNI curation JSON file (with PTID, SCANDATE, Partition, TR)
 """
 import argparse
 import json
 import logging
+import os
 import sys
 import tempfile
 from pathlib import Path
@@ -37,10 +42,10 @@ logging.getLogger("nibabel").setLevel(logging.ERROR)
 _logger = logging.getLogger(__name__)
 
 ROOT = Path(__file__).parents[1]
-ADNI_FMRIPREP = Path("/teamspace/studios/this_studio/ADNI_fmriprep")
-ADNI_OUTPUT = ADNI_FMRIPREP / "output"
-ADNI_CURATION_JSON = ADNI_FMRIPREP / "ADNI_curation.json"
-ADNI_TR_JSON = ADNI_FMRIPREP / "valid_subjects_sessions_with_metadata.json"
+
+ADNI_FMRIPREP_ROOT = Path(os.environ["ADNI_FMRIPREP_ROOT"])
+ADNI_OUTPUT = ADNI_FMRIPREP_ROOT / "output"
+ADNI_CURATION_JSON = Path(os.environ["ADNI_CURATION_JSON"])
 
 # Target TR for resampling (matches HCP/AABC)
 TARGET_TR = 0.72
@@ -142,18 +147,6 @@ def main(args):
         curation_data = json.load(f)
     _logger.info("Loaded %d samples from curation JSON", len(curation_data))
 
-    # Load TR metadata
-    with ADNI_TR_JSON.open() as f:
-        tr_metadata = json.load(f)
-    _logger.info("Loaded TR metadata for %d subjects", tr_metadata["total_subjects"])
-
-    # Build TR lookup: {(sub, ses): TR}
-    tr_lookup = {}
-    for sub, sessions in tr_metadata["subjects"].items():
-        for sess in sessions:
-            ses = sess["session_id"]
-            tr_lookup[(sub, ses)] = sess["TR"]
-
     # Build samples by split
     samples_by_split = {"train": [], "validation": [], "test": []}
     missing_tr = 0
@@ -163,6 +156,13 @@ def main(args):
         ptid = entry["PTID"]
         scandate = entry["SCANDATE"]
         split = SPLIT_MAP[entry["Partition"]]
+        original_tr = entry.get("TR")
+
+        # Check if TR is available
+        if original_tr is None:
+            _logger.debug("Missing TR for %s/%s", ptid, scandate)
+            missing_tr += 1
+            continue
 
         sub = ptid_to_sub(ptid)
         ses = scandate_to_ses(scandate)
@@ -186,16 +186,6 @@ def main(args):
             _logger.debug("Missing file: %s", file_path)
             missing_file += 1
             continue
-
-        # Get TR for this session
-        # TR lookup key uses format from JSON: sub without prefix, ses without prefix
-        tr_key = (sub, ses)
-        if tr_key not in tr_lookup:
-            _logger.debug("Missing TR for %s/%s", sub, ses)
-            missing_tr += 1
-            continue
-
-        original_tr = tr_lookup[tr_key]
 
         sample = {
             "sub": sub,
