@@ -722,6 +722,9 @@ def resample_timeseries(
     new_length = int(tr * len(series) / new_tr)
     new_x = new_tr * np.arange(new_length)
 
+    # Trim any extra points outside of bounds. This can happen if new_tr < tr.
+    new_x = new_x[new_x <= x[-1]]
+
     if kind == "pchip":
         interp = scipy.interpolate.PchipInterpolator(x, series, axis=0)
     else:
