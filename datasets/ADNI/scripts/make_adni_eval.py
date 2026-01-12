@@ -3,9 +3,9 @@
 This script creates HuggingFace Arrow datasets for ADNI resting-state fMRI:
 - Resamples all BOLD data from original TR to 0.72s
 - Takes single 500 TR sample per session (no windowing)
-- Uses existing Train/Val/Test split from metadata CSV
+- Uses existing Train/Val/Test split from metadata JSON
 
-Supports parcellations: schaefer400, schaefer400_tians3, flat, a424, fslr91k
+Supports parcellations: schaefer400, schaefer400_tians3, flat, a424, mni, mni_cortex
 """
 import argparse
 import json
@@ -16,13 +16,16 @@ from pathlib import Path
 
 import datasets as hfds
 import numpy as np
-import pandas as pd
 
 import scipy.interpolate
 import scipy.signal
 
 import fmri_fm_eval.nisc as nisc
 import fmri_fm_eval.readers as readers
+
+# use smaller writer batch size to avoid OverflowError on very large mni data
+# https://github.com/huggingface/datasets/issues/6422
+hfds.config.DEFAULT_MAX_BATCH_SIZE = 256
 
 logging.basicConfig(
     format="[%(levelname)s %(asctime)s]: %(message)s",
@@ -36,7 +39,7 @@ _logger = logging.getLogger(__name__)
 ROOT = Path(__file__).parents[1]
 ADNI_FMRIPREP = Path("/teamspace/studios/this_studio/ADNI_fmriprep")
 ADNI_OUTPUT = ADNI_FMRIPREP / "output"
-ADNI_CSV = ADNI_FMRIPREP / "valid_adni_benchmark_split_final.csv"
+ADNI_CURATION_JSON = ADNI_FMRIPREP / "ADNI_curation.json"
 ADNI_TR_JSON = ADNI_FMRIPREP / "valid_subjects_sessions_with_metadata.json"
 
 # Target TR for resampling (matches HCP/AABC)
@@ -134,9 +137,10 @@ def main(args):
             )
             return 1
 
-    # Load metadata CSV
-    df = pd.read_csv(ADNI_CSV)
-    _logger.info("Loaded %d samples from CSV", len(df))
+    # Load metadata JSON
+    with ADNI_CURATION_JSON.open() as f:
+        curation_data = json.load(f)
+    _logger.info("Loaded %d samples from curation JSON", len(curation_data))
 
     # Load TR metadata
     with ADNI_TR_JSON.open() as f:
@@ -155,23 +159,31 @@ def main(args):
     missing_tr = 0
     missing_file = 0
 
-    for _, row in df.iterrows():
-        ptid = row["PTID"]
-        scandate = row["SCANDATE_Imaging"]
-        split = SPLIT_MAP[row["Split"]]
+    for entry in curation_data:
+        ptid = entry["PTID"]
+        scandate = entry["SCANDATE"]
+        split = SPLIT_MAP[entry["Partition"]]
 
         sub = ptid_to_sub(ptid)
         ses = scandate_to_ses(scandate)
 
-        # Build CIFTI path
-        cifti_path = (
-            ADNI_OUTPUT / f"sub-{sub}" / f"ses-{ses}" / "func" /
-            f"sub-{sub}_ses-{ses}_task-rest_space-fsLR_den-91k_bold.dtseries.nii"
-        )
+        # Build file path based on space
+        if args.space in {"mni", "mni_cortex"}:
+            # Volumetric MNI path
+            file_path = (
+                ADNI_OUTPUT / f"sub-{sub}" / f"ses-{ses}" / "func" /
+                f"sub-{sub}_ses-{ses}_task-rest_space-MNI152NLin6Asym_res-2_desc-preproc_bold.nii.gz"
+            )
+        else:
+            # CIFTI path (schaefer400, schaefer400_tians3, flat, a424)
+            file_path = (
+                ADNI_OUTPUT / f"sub-{sub}" / f"ses-{ses}" / "func" /
+                f"sub-{sub}_ses-{ses}_task-rest_space-fsLR_den-91k_bold.dtseries.nii"
+            )
 
         # Check if file exists
-        if not cifti_path.exists():
-            _logger.debug("Missing CIFTI: %s", cifti_path)
+        if not file_path.exists():
+            _logger.debug("Missing file: %s", file_path)
             missing_file += 1
             continue
 
@@ -190,8 +202,8 @@ def main(args):
             "visit": ses,
             "mod": "MR",
             "task": "rest",
-            "path": str(cifti_path.relative_to(ADNI_OUTPUT)),
-            "fullpath": str(cifti_path),
+            "path": str(file_path.relative_to(ADNI_OUTPUT)),
+            "fullpath": str(file_path),
             "original_tr": original_tr,
             "ptid": ptid,
             "scandate": scandate,
@@ -199,7 +211,7 @@ def main(args):
         samples_by_split[split].append(sample)
 
     if missing_file > 0:
-        _logger.warning("Missing %d CIFTI files", missing_file)
+        _logger.warning("Missing %d input files", missing_file)
     if missing_tr > 0:
         _logger.warning("Missing TR for %d samples", missing_tr)
 
@@ -233,8 +245,11 @@ def main(args):
     )
 
     writer_batch_size = args.writer_batch_size
-    if writer_batch_size is None and args.space == "flat":
-        writer_batch_size = 16
+    if writer_batch_size is None:
+        if args.space == "flat":
+            writer_batch_size = 16
+        elif args.space in {"mni", "mni_cortex"}:
+            writer_batch_size = 8
 
     # Generate datasets
     with tempfile.TemporaryDirectory(prefix="huggingface-") as tmpdir:
@@ -251,6 +266,8 @@ def main(args):
                 split=hfds.NamedSplit(split),
                 cache_dir=tmpdir,
                 writer_batch_size=writer_batch_size,
+                # fingerprint needed for mni/mni_cortex to avoid hashing the reader
+                fingerprint=f"adni-{args.space}-{split}",
             )
         dataset = hfds.DatasetDict(dataset_dict)
 

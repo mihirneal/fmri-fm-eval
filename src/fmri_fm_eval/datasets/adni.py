@@ -11,7 +11,6 @@ ADNI_ROOT = os.getenv("ADNI_ROOT")
 assert ADNI_ROOT is not None, (
     "ADNI_ROOT environment variable is not set. "
     "Please set it to the directory containing ADNI processed data. "
-    "Example: export ADNI_ROOT=/path/to/fmri-fm-eval/datasets/ADNI"
 )
 ADNI_ROOT = Path(ADNI_ROOT)
 
@@ -42,14 +41,14 @@ def _create_adni(space: str, target: str, **kwargs):
     """
     # Load target map
     target_map_path = ADNI_TARGET_MAP_DICT[target]
-    target_map_path = ADNI_ROOT / "metadata/targets" / target_map_path
+    target_map_path = ADNI_ROOT / "targets" / target_map_path
     with open(target_map_path) as f:
         target_map = json.load(f)
 
     dataset_dict = {}
     splits = ["train", "validation", "test"]
     for split in splits:
-        url = f"{ADNI_ROOT}/data/processed/adni.{space}.arrow/{split}"
+        url = f"{ADNI_ROOT}/adni.{space}.arrow/{split}"
         dataset = hfds.load_dataset("arrow", data_files=f"{url}/*.arrow", split="train", **kwargs)
 
         # For ADNI, we need custom target key mapping since targets are keyed by PTID_SCANDATE
@@ -173,20 +172,20 @@ def adni_sex(space: str, **kwargs):
 
 @register_dataset
 def adni_age(space: str, **kwargs):
-    """ADNI age (binned into 3-4 quantile bins)."""
+    """ADNI age (binned into 3 quantile bins)."""
     return _create_adni(space, target="age", **kwargs)
 
 
 # Cognitive scores
 @register_dataset
 def adni_mmse(space: str, **kwargs):
-    """ADNI Mini-Mental State Exam score (binned into 3 quantile bins)."""
+    """ADNI Mini-Mental State Exam score (binned: 0-23=Dementia, 24-27=MCI, 28-30=Normal)."""
     return _create_adni(space, target="mmse", **kwargs)
 
 
 @register_dataset
 def adni_cdrsb(space: str, **kwargs):
-    """ADNI Clinical Dementia Rating Sum of Boxes (binned into 3 quantile bins)."""
+    """ADNI Clinical Dementia Rating Sum of Boxes (binned: 0-0.5=Normal, 1-4.5=Mild, 5+=Moderate/Severe)."""
     return _create_adni(space, target="cdrsb", **kwargs)
 
 

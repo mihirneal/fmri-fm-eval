@@ -15,7 +15,8 @@ SPACES=(
     "schaefer400_tians3"
     "flat"
     "a424"
-    "fslr91k"
+    "mni"
+    "mni_cortex"
 )
 
 echo "Generating ADNI evaluation datasets..."

@@ -40,16 +40,23 @@ AD_VS_CN_CLASSES = ["CN", "Dementia"]
 PMCI_VS_SMCI_MAP = {"sMCI": 0, "pMCI": 1}
 PMCI_VS_SMCI_CLASSES = ["sMCI", "pMCI"]
 
-# Quantile binning with balance check
-PRIMARY_BINS = 4
+# Quantile binning with balance check (used for age)
+PRIMARY_BINS = 3
 FALLBACK_BINS = 3
 MIN_BIN_FRACTION = 0.20
 
-# Per-target bin overrides (use exact bin count, skip balance rule)
-BIN_OVERRIDES = {
-    "age": 4,
-    "mmse": 3,  # MMSE is heavily skewed toward high scores
-    "cdrsb": 3,  # CDRSB is heavily skewed toward low scores
+# Clinical cutoffs for cognitive scores
+CLINICAL_CUTOFFS = {
+    "mmse": {
+        "bins": [-1, 23, 27, 30],  # Dementia, MCI, Normal
+        "labels": ["Dementia (0-23)", "MCI (24-27)", "Normal (28-30)"],
+        "num_bins": 3,
+    },
+    "cdrsb": {
+        "bins": [-0.1, 0.5, 4.5, 100],  # Normal, Mild, Moderate/Severe
+        "labels": ["Normal (0-0.5)", "Mild (1-4.5)", "Moderate/Severe (5+)"],
+        "num_bins": 3,
+    },
 }
 
 # Targets configuration
@@ -93,6 +100,22 @@ def quantize_with_balance(series: pd.Series):
     else:
         num_bins = PRIMARY_BINS
     return targets, bins, counts, num_bins
+
+
+def clinical_binning(series: pd.Series, cutoffs: dict):
+    """Apply clinical cutoffs to create bins."""
+    bins = cutoffs["bins"]
+    num_bins = cutoffs["num_bins"]
+
+    # Use pd.cut for interval-based binning
+    targets = pd.cut(series, bins=bins, labels=range(num_bins), include_lowest=True)
+    targets = targets.astype(int)
+    counts = np.bincount(targets, minlength=num_bins)
+
+    # Return bin edges (excluding -inf/inf endpoints)
+    bin_edges = [b for b in bins[1:-1]]
+
+    return targets, bin_edges, counts
 
 
 def build_bin_stats(values: pd.Series, labels: pd.Series, num_bins: int):
@@ -139,24 +162,41 @@ def main():
         na_count = int(na_mask.sum())
 
         numeric = series.astype(float)
-        override_bins = BIN_OVERRIDES.get(target)
-        if override_bins is not None:
-            targets, bins, counts = quantize(numeric, num_bins=override_bins)
-            num_bins = override_bins
-        else:
-            targets, bins, counts, num_bins = quantize_with_balance(numeric)
 
-        bin_stats = build_bin_stats(numeric, targets, num_bins)
-        info = {
-            "target": target,
-            "column": col,
-            "na_count": na_count,
-            "subjects_total": int(df.shape[0]),
-            "bins": bins,
-            "label_counts": counts.tolist(),
-            "num_bins": num_bins,
-            "bin_stats": bin_stats,
-        }
+        # Use clinical cutoffs if available, otherwise use quantile binning
+        if target in CLINICAL_CUTOFFS:
+            cutoffs = CLINICAL_CUTOFFS[target]
+            targets, bins, counts = clinical_binning(numeric, cutoffs)
+            num_bins = cutoffs["num_bins"]
+            bin_labels = cutoffs["labels"]
+
+            bin_stats = build_bin_stats(numeric, targets, num_bins)
+            info = {
+                "target": target,
+                "column": col,
+                "na_count": na_count,
+                "subjects_total": int(df.shape[0]),
+                "bins": bins,
+                "bin_labels": bin_labels,
+                "label_counts": counts.tolist(),
+                "num_bins": num_bins,
+                "bin_stats": bin_stats,
+                "note": "Clinical cutoffs used for binning",
+            }
+        else:
+            # Quantile binning for age
+            targets, bins, counts, num_bins = quantize_with_balance(numeric)
+            bin_stats = build_bin_stats(numeric, targets, num_bins)
+            info = {
+                "target": target,
+                "column": col,
+                "na_count": na_count,
+                "subjects_total": int(df.shape[0]),
+                "bins": bins,
+                "label_counts": counts.tolist(),
+                "num_bins": num_bins,
+                "bin_stats": bin_stats,
+            }
 
         targets_dict = targets.to_dict()
         _logger.info("%s: %s", target, json.dumps(info, indent=None))

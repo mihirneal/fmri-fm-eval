@@ -1,0 +1,16 @@
+{
+    "target": "diagnosis",
+    "column": "Current_DX",
+    "na_count": 0,
+    "subjects_total": 781,
+    "classes": [
+        "CN",
+        "MCI",
+        "Dementia"
+    ],
+    "label_counts": [
+        259,
+        256,
+        266
+    ]
+}

@@ -1,0 +1,45 @@
+{
+    "target": "mmse",
+    "column": "Score_MMSE",
+    "na_count": 5,
+    "subjects_total": 781,
+    "bins": [
+        23,
+        27
+    ],
+    "bin_labels": [
+        "Dementia (0-23)",
+        "MCI (24-27)",
+        "Normal (28-30)"
+    ],
+    "label_counts": [
+        171,
+        189,
+        416
+    ],
+    "num_bins": 3,
+    "bin_stats": [
+        {
+            "bin": 0,
+            "count": 171,
+            "fraction": 0.2204,
+            "min": 5.0,
+            "max": 23.0
+        },
+        {
+            "bin": 1,
+            "count": 189,
+            "fraction": 0.2436,
+            "min": 24.0,
+            "max": 27.0
+        },
+        {
+            "bin": 2,
+            "count": 416,
+            "fraction": 0.5361,
+            "min": 28.0,
+            "max": 30.0
+        }
+    ],
+    "note": "Clinical cutoffs used for binning"
+}

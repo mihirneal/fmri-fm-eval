@@ -1,0 +1,15 @@
+{
+    "target": "pmci_vs_smci",
+    "column": "Label_Prog_pMCI_vs_sMCI",
+    "na_count": 625,
+    "subjects_total": 781,
+    "classes": [
+        "sMCI",
+        "pMCI"
+    ],
+    "label_counts": [
+        127,
+        29
+    ],
+    "note": "MCI subset only (progressive vs stable MCI)"
+}
