@@ -11,6 +11,7 @@ Environment variables:
 - ADNI_FMRIPREP_ROOT: Path to ADNI fMRIPrep root directory
 - ADNI_CURATION_JSON: Path to ADNI curation JSON file (with PTID, SCANDATE, Partition, TR)
 """
+
 import argparse
 import json
 import logging
@@ -21,9 +22,6 @@ from pathlib import Path
 
 import datasets as hfds
 import numpy as np
-
-import scipy.interpolate
-import scipy.signal
 
 import fmri_fm_eval.nisc as nisc
 import fmri_fm_eval.readers as readers
@@ -43,15 +41,19 @@ _logger = logging.getLogger(__name__)
 
 ROOT = Path(__file__).parents[1]
 
+# TODO: update this to follow pattern of other datasets:
+# - paths are relative to the dataset root
+# - fmriprep goes in data/fmriprep
+# - outputs go in data/processed (or at least in data/ somewhere)
 ADNI_FMRIPREP_ROOT = Path(os.environ["ADNI_FMRIPREP_ROOT"])
 ADNI_OUTPUT = ADNI_FMRIPREP_ROOT / "output"
 ADNI_CURATION_JSON = Path(os.environ["ADNI_CURATION_JSON"])
 
-# Target TR for resampling (matches HCP/AABC)
-TARGET_TR = 0.72
-
-# Maximum TRs to keep after resampling (360 seconds at 0.72s TR)
-MAX_TRS = 500
+# Resample all time series to fixed TR
+# ~80% of ADNI data has TR=3.0s
+TARGET_TR = 3.0
+# Keep first 100 TRs (5 mins) from each run
+MAX_TRS = 100
 
 # Split mapping from CSV
 SPLIT_MAP = {
@@ -59,52 +61,6 @@ SPLIT_MAP = {
     "Val": "validation",
     "Test": "test",
 }
-
-
-def resample_timeseries_safe(
-    series: np.ndarray,
-    tr: float,
-    new_tr: float,
-    kind: str = "cubic",
-    antialias: bool = True,
-) -> np.ndarray:
-    """Resample a time series to a target TR with safe bounds handling.
-
-    This is a wrapper around nisc.resample_timeseries that fixes floating point
-    precision issues at the interpolation boundaries.
-    """
-    if tr == new_tr:
-        return series
-
-    fs = 1.0 / tr
-    new_fs = 1.0 / new_tr
-
-    # Anti-aliasing low-pass filter (from nisc.resample_timeseries)
-    if antialias and new_fs < fs:
-        q = fs / new_fs
-        sos = scipy.signal.cheby1(8, 0.05, 0.8 / q, output="sos")
-        series = scipy.signal.sosfiltfilt(sos, series, axis=0, padtype="even")
-
-    # Original time points
-    n_orig = len(series)
-    x = tr * np.arange(n_orig)
-    max_t = x[-1]  # Maximum time in original data
-
-    # Compute new time points, ensuring we don't exceed original range
-    # Use floor division to be safe with floating point
-    new_length = int(np.floor(max_t / new_tr)) + 1
-    new_x = new_tr * np.arange(new_length)
-
-    # Clip to original range (handles floating point precision issues)
-    new_x = np.clip(new_x, 0, max_t)
-
-    if kind == "pchip":
-        interp = scipy.interpolate.PchipInterpolator(x, series, axis=0)
-    else:
-        interp = scipy.interpolate.interp1d(x, series, kind=kind, axis=0)
-
-    series = interp(new_x)
-    return series
 
 
 def ptid_to_sub(ptid: str) -> str:
@@ -130,19 +86,8 @@ def main(args):
         _logger.warning("Output %s exists; exiting. Use --overwrite to replace.", outdir)
         return 1
 
-    # Check for a424 CIFTI availability
-    if args.space == "a424":
-        try:
-            nisc.fetch_a424(cifti=True)
-        except Exception as exc:
-            _logger.error(
-                "A424 from CIFTI requires a CIFTI parcellation. "
-                "Set A424_CIFTI_PATH or provide volumetric NIfTI inputs. (%s)",
-                exc,
-            )
-            return 1
-
     # Load metadata JSON
+    # TODO: how is this curation file generated?
     with ADNI_CURATION_JSON.open() as f:
         curation_data = json.load(f)
     _logger.info("Loaded %d samples from curation JSON", len(curation_data))
@@ -156,36 +101,37 @@ def main(args):
         ptid = entry["PTID"]
         scandate = entry["SCANDATE"]
         split = SPLIT_MAP[entry["Partition"]]
-        original_tr = entry.get("TR")
 
-        # Check if TR is available
-        if original_tr is None:
-            _logger.debug("Missing TR for %s/%s", ptid, scandate)
-            missing_tr += 1
+        # ~80% of curated subjects have TR = 3.0, ~10% have TR ~= 0.6, and the rest have
+        # weird TRs. We only keep the TR = 3.0.
+        original_tr = float(entry["TR"])
+        if not original_tr == 3.0:
             continue
 
         sub = ptid_to_sub(ptid)
         ses = scandate_to_ses(scandate)
 
         # Build file path based on space
-        if args.space in {"mni", "mni_cortex"}:
+        # All files are curated and are assumed to exist. If not, we will error out.
+        # TODO: we really have to fix these repetitive checks.
+        if args.space in {"mni", "mni_cortex", "schaefer400_tians3_buckner7"}:
             # Volumetric MNI path
             file_path = (
-                ADNI_OUTPUT / f"sub-{sub}" / f"ses-{ses}" / "func" /
-                f"sub-{sub}_ses-{ses}_task-rest_space-MNI152NLin6Asym_res-2_desc-preproc_bold.nii.gz"
+                ADNI_OUTPUT
+                / f"sub-{sub}"
+                / f"ses-{ses}"
+                / "func"
+                / f"sub-{sub}_ses-{ses}_task-rest_space-MNI152NLin6Asym_res-2_desc-preproc_bold.nii.gz"
             )
         else:
             # CIFTI path (schaefer400, schaefer400_tians3, flat, a424)
             file_path = (
-                ADNI_OUTPUT / f"sub-{sub}" / f"ses-{ses}" / "func" /
-                f"sub-{sub}_ses-{ses}_task-rest_space-fsLR_den-91k_bold.dtseries.nii"
+                ADNI_OUTPUT
+                / f"sub-{sub}"
+                / f"ses-{ses}"
+                / "func"
+                / f"sub-{sub}_ses-{ses}_task-rest_space-fsLR_den-91k_bold.dtseries.nii"
             )
-
-        # Check if file exists
-        if not file_path.exists():
-            _logger.debug("Missing file: %s", file_path)
-            missing_file += 1
-            continue
 
         sample = {
             "sub": sub,
@@ -227,7 +173,6 @@ def main(args):
             "start": hfds.Value("int32"),
             "end": hfds.Value("int32"),
             "tr": hfds.Value("float32"),
-            "segment": hfds.Value("int32"),
             "bold": hfds.Array2D(shape=(None, dim), dtype="float16"),
             "mean": hfds.Array2D(shape=(1, dim), dtype="float32"),
             "std": hfds.Array2D(shape=(1, dim), dtype="float32"),
@@ -245,9 +190,6 @@ def main(args):
     with tempfile.TemporaryDirectory(prefix="huggingface-") as tmpdir:
         dataset_dict = {}
         for split, samples in samples_by_split.items():
-            if not samples:
-                _logger.warning("No samples for split %s; skipping.", split)
-                continue
             dataset_dict[split] = hfds.Dataset.from_generator(
                 generate_samples,
                 features=features,
@@ -274,45 +216,37 @@ def generate_samples(samples: list[dict], *, reader, dim: int):
         fullpath = sample_info["fullpath"]
         original_tr = sample_info["original_tr"]
 
-        try:
-            # Read CIFTI data
-            series = reader(fullpath)
-            T_orig, D = series.shape
-            assert D == dim, f"Expected dim {dim}, got {D} for {fullpath}"
+        series = reader(fullpath)
 
-            # Resample to target TR using safe function
-            if original_tr != TARGET_TR:
-                series = resample_timeseries_safe(
-                    series, tr=original_tr, new_tr=TARGET_TR
-                )
+        # NOTE: we have updated the resample_timeseries to fix an issue related to out
+        # of bounds time samples when upsampling. earlier datasets were generated before
+        # the fix and could be inconsistent/have issues.
+        if original_tr != TARGET_TR:
+            series = nisc.resample_timeseries(
+                series, tr=original_tr, new_tr=TARGET_TR, kind="pchip"
+            )
 
-            T_resampled = len(series)
+        T, D = series.shape
+        assert D == dim
+        # All files are curated and are assumed to have enough data. If not, we will error out.
+        assert T >= MAX_TRS, f"Path {fullpath} does not have enough data ({T}<{MAX_TRS})"
 
-            # Take first MAX_TRS (or all if shorter)
-            n_trs = min(MAX_TRS, T_resampled)
-            series = series[:n_trs]
+        series = series[:MAX_TRS]
+        series, mean, std = nisc.scale(series)
 
-            # Z-score normalization
-            series, mean, std = nisc.scale(series)
-
-            yield {
-                "sub": sample_info["sub"],
-                "visit": sample_info["visit"],
-                "mod": sample_info["mod"],
-                "task": sample_info["task"],
-                "path": sample_info["path"],
-                "start": 0,
-                "end": n_trs,
-                "tr": TARGET_TR,
-                "segment": 0,  # Single sample per session, no windowing
-                "bold": series.astype(np.float16),
-                "mean": mean.astype(np.float32),
-                "std": std.astype(np.float32),
-            }
-
-        except Exception as exc:
-            _logger.warning("Failed to process %s: %s", fullpath, exc)
-            continue
+        yield {
+            "sub": sample_info["sub"],
+            "visit": sample_info["visit"],
+            "mod": sample_info["mod"],
+            "task": sample_info["task"],
+            "path": sample_info["path"],
+            "start": 0,
+            "end": MAX_TRS,
+            "tr": TARGET_TR,
+            "bold": series.astype(np.float16),
+            "mean": mean.astype(np.float32),
+            "std": std.astype(np.float32),
+        }
 
 
 if __name__ == "__main__":
@@ -322,26 +256,19 @@ if __name__ == "__main__":
         type=str,
         default="schaefer400",
         choices=list(readers.READER_DICT),
-        help="Target anatomical space for processing (default: schaefer400)"
+        help="Target anatomical space for processing (default: schaefer400)",
     )
     parser.add_argument(
-        "--num_proc",
-        "-j",
-        type=int,
-        default=32,
-        help="Number of parallel processes"
+        "--num_proc", "-j", type=int, default=32, help="Number of parallel processes"
     )
     parser.add_argument(
         "--writer_batch_size",
         type=int,
         default=None,
-        help="Arrow writer batch size (default: 16 for flat, otherwise datasets default)"
+        help="Arrow writer batch size (default: 16 for flat, otherwise datasets default)",
     )
     parser.add_argument(
-        "--overwrite",
-        "-x",
-        action="store_true",
-        help="Overwrite existing output directory"
+        "--overwrite", "-x", action="store_true", help="Overwrite existing output directory"
     )
     args = parser.parse_args()
     sys.exit(main(args))
