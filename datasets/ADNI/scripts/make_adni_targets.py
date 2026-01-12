@@ -7,6 +7,7 @@ Creates JSON files mapping sample keys to target labels for:
 
 Sample key format: {PTID}_{SCANDATE} (e.g., 168_S_6049_2020-10-12)
 """
+
 import json
 import logging
 from pathlib import Path
@@ -23,7 +24,11 @@ logging.basicConfig(
 _logger = logging.getLogger(__name__)
 
 ROOT = Path(__file__).parents[1]
-ADNI_CSV_PATH = Path("/teamspace/studios/this_studio/ADNI_fmriprep/valid_adni_benchmark_split_final.csv")
+
+# TODO: replace this absolute lightning path with relative path to `metadata/`
+ADNI_CSV_PATH = Path(
+    "/teamspace/studios/this_studio/ADNI_fmriprep/valid_adni_benchmark_split_final.csv"
+)
 
 # Gender mapping (classification target)
 GENDER_MAP = {"Female": 0, "Male": 1}
@@ -42,8 +47,6 @@ PMCI_VS_SMCI_CLASSES = ["sMCI", "pMCI"]
 
 # Quantile binning with balance check (used for age)
 PRIMARY_BINS = 3
-FALLBACK_BINS = 3
-MIN_BIN_FRACTION = 0.20
 
 # Clinical cutoffs for cognitive scores
 CLINICAL_CUTOFFS = {
@@ -88,18 +91,6 @@ def quantize(series: pd.Series, num_bins: int):
     targets = pd.Series(targets, index=series.index)
     counts = np.bincount(targets, minlength=num_bins)
     return targets, bins, counts
-
-
-def quantize_with_balance(series: pd.Series):
-    """Quantize with automatic fallback if bins are unbalanced."""
-    targets, bins, counts = quantize(series, num_bins=PRIMARY_BINS)
-    total = counts.sum()
-    if total == 0 or (counts / total).min() < MIN_BIN_FRACTION:
-        targets, bins, counts = quantize(series, num_bins=FALLBACK_BINS)
-        num_bins = FALLBACK_BINS
-    else:
-        num_bins = PRIMARY_BINS
-    return targets, bins, counts, num_bins
 
 
 def clinical_binning(series: pd.Series, cutoffs: dict):
@@ -185,7 +176,7 @@ def main():
             }
         else:
             # Quantile binning for age
-            targets, bins, counts, num_bins = quantize_with_balance(numeric)
+            targets, bins, counts, num_bins = quantize(numeric)
             bin_stats = build_bin_stats(numeric, targets, num_bins)
             info = {
                 "target": target,
