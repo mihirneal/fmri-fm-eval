@@ -30,18 +30,6 @@
     "TR": 3
   },
   {
-    "PTID": "007_S_4637",
-    "SCANDATE": "2017-10-10",
-    "Partition": "Train",
-    "TR": 0.607
-  },
-  {
-    "PTID": "023_S_4164",
-    "SCANDATE": "2017-12-18",
-    "Partition": "Train",
-    "TR": 0.607
-  },
-  {
     "PTID": "127_S_5132",
     "SCANDATE": "2017-05-18",
     "Partition": "Train",
@@ -52,12 +40,6 @@
     "SCANDATE": "2017-07-07",
     "Partition": "Train",
     "TR": 3
-  },
-  {
-    "PTID": "073_S_4795",
-    "SCANDATE": "2019-11-05",
-    "Partition": "Train",
-    "TR": 0.607
   },
   {
     "PTID": "010_S_4345",
@@ -90,12 +72,6 @@
     "TR": 3
   },
   {
-    "PTID": "067_S_4212",
-    "SCANDATE": "2017-11-20",
-    "Partition": "Train",
-    "TR": 0.607
-  },
-  {
     "PTID": "100_S_5091",
     "SCANDATE": "2015-05-22",
     "Partition": "Train",
@@ -112,18 +88,6 @@
     "SCANDATE": "2017-07-18",
     "Partition": "Train",
     "TR": 3
-  },
-  {
-    "PTID": "012_S_5157",
-    "SCANDATE": "2013-05-16",
-    "Partition": "Train",
-    "TR": 3.00044
-  },
-  {
-    "PTID": "037_S_5126",
-    "SCANDATE": "2021-05-19",
-    "Partition": "Train",
-    "TR": 0.607
   },
   {
     "PTID": "135_S_4598",
@@ -186,12 +150,6 @@
     "TR": 3
   },
   {
-    "PTID": "007_S_4387",
-    "SCANDATE": "2017-11-01",
-    "Partition": "Train",
-    "TR": 0.607
-  },
-  {
     "PTID": "005_S_0610",
     "SCANDATE": "2017-09-20",
     "Partition": "Train",
@@ -210,12 +168,6 @@
     "TR": 3
   },
   {
-    "PTID": "016_S_4952",
-    "SCANDATE": "2015-12-02",
-    "Partition": "Train",
-    "TR": 2.925
-  },
-  {
     "PTID": "141_S_6061",
     "SCANDATE": "2017-08-13",
     "Partition": "Train",
@@ -228,12 +180,6 @@
     "TR": 3
   },
   {
-    "PTID": "002_S_4799",
-    "SCANDATE": "2013-07-02",
-    "Partition": "Train",
-    "TR": 3.001
-  },
-  {
     "PTID": "037_S_6032",
     "SCANDATE": "2017-06-15",
     "Partition": "Train",
@@ -244,18 +190,6 @@
     "SCANDATE": "2018-07-09",
     "Partition": "Train",
     "TR": 3
-  },
-  {
-    "PTID": "941_S_1195",
-    "SCANDATE": "2018-04-05",
-    "Partition": "Train",
-    "TR": 0.607
-  },
-  {
-    "PTID": "016_S_4951",
-    "SCANDATE": "2015-12-02",
-    "Partition": "Train",
-    "TR": 2.925
   },
   {
     "PTID": "012_S_4545",
@@ -292,12 +226,6 @@
     "SCANDATE": "2011-11-30",
     "Partition": "Train",
     "TR": 3
-  },
-  {
-    "PTID": "037_S_6046",
-    "SCANDATE": "2022-05-20",
-    "Partition": "Train",
-    "TR": 0.607
   },
   {
     "PTID": "127_S_2234",
@@ -342,12 +270,6 @@
     "TR": 3
   },
   {
-    "PTID": "941_S_4376",
-    "SCANDATE": "2018-08-15",
-    "Partition": "Train",
-    "TR": 0.607
-  },
-  {
     "PTID": "941_S_5193",
     "SCANDATE": "2017-06-09",
     "Partition": "Train",
@@ -378,22 +300,10 @@
     "TR": 3
   },
   {
-    "PTID": "024_S_6005",
-    "SCANDATE": "2019-03-25",
-    "Partition": "Train",
-    "TR": 0.607
-  },
-  {
     "PTID": "029_S_5158",
     "SCANDATE": "2018-04-04",
     "Partition": "Train",
     "TR": 3
-  },
-  {
-    "PTID": "067_S_2301",
-    "SCANDATE": "2017-08-11",
-    "Partition": "Train",
-    "TR": 0.607
   },
   {
     "PTID": "141_S_6008",
@@ -438,18 +348,6 @@
     "TR": 3
   },
   {
-    "PTID": "007_S_1222",
-    "SCANDATE": "2018-01-17",
-    "Partition": "Train",
-    "TR": 0.607
-  },
-  {
-    "PTID": "002_S_4213",
-    "SCANDATE": "2011-09-02",
-    "Partition": "Train",
-    "TR": 6.02158
-  },
-  {
     "PTID": "009_S_5176",
     "SCANDATE": "2017-10-06",
     "Partition": "Train",
@@ -492,22 +390,10 @@
     "TR": 3
   },
   {
-    "PTID": "002_S_6066",
-    "SCANDATE": "2019-11-11",
-    "Partition": "Train",
-    "TR": 0.607
-  },
-  {
     "PTID": "011_S_4278",
     "SCANDATE": "2017-11-30",
     "Partition": "Train",
     "TR": 3
-  },
-  {
-    "PTID": "002_S_2010",
-    "SCANDATE": "2011-07-07",
-    "Partition": "Train",
-    "TR": 6.02158
   },
   {
     "PTID": "053_S_4578",
@@ -532,12 +418,6 @@
     "SCANDATE": "2017-09-25",
     "Partition": "Train",
     "TR": 3
-  },
-  {
-    "PTID": "067_S_4072",
-    "SCANDATE": "2017-08-25",
-    "Partition": "Train",
-    "TR": 0.607
   },
   {
     "PTID": "099_S_6016",
@@ -568,12 +448,6 @@
     "SCANDATE": "2017-09-19",
     "Partition": "Train",
     "TR": 3
-  },
-  {
-    "PTID": "109_S_4499",
-    "SCANDATE": "2016-03-10",
-    "Partition": "Train",
-    "TR": 2.925
   },
   {
     "PTID": "007_S_5265",
@@ -642,12 +516,6 @@
     "TR": 3
   },
   {
-    "PTID": "941_S_5124",
-    "SCANDATE": "2018-01-26",
-    "Partition": "Train",
-    "TR": 0.607
-  },
-  {
     "PTID": "031_S_0618",
     "SCANDATE": "2019-09-20",
     "Partition": "Train",
@@ -688,12 +556,6 @@
     "SCANDATE": "2022-01-20",
     "Partition": "Train",
     "TR": 3
-  },
-  {
-    "PTID": "002_S_5230",
-    "SCANDATE": "2013-06-27",
-    "Partition": "Train",
-    "TR": 3.001
   },
   {
     "PTID": "041_S_4051",
@@ -792,12 +654,6 @@
     "TR": 3
   },
   {
-    "PTID": "002_S_4225",
-    "SCANDATE": "2011-09-21",
-    "Partition": "Train",
-    "TR": 6.02158
-  },
-  {
     "PTID": "011_S_4105",
     "SCANDATE": "2017-10-10",
     "Partition": "Train",
@@ -808,12 +664,6 @@
     "SCANDATE": "2017-04-12",
     "Partition": "Train",
     "TR": 3
-  },
-  {
-    "PTID": "002_S_4270",
-    "SCANDATE": "2011-10-11",
-    "Partition": "Train",
-    "TR": 6.02158
   },
   {
     "PTID": "003_S_4872",
@@ -840,18 +690,6 @@
     "TR": 3
   },
   {
-    "PTID": "941_S_4292",
-    "SCANDATE": "2021-10-05",
-    "Partition": "Train",
-    "TR": 0.607
-  },
-  {
-    "PTID": "037_S_5222",
-    "SCANDATE": "2019-09-23",
-    "Partition": "Train",
-    "TR": 0.607
-  },
-  {
     "PTID": "098_S_4275",
     "SCANDATE": "2018-12-21",
     "Partition": "Train",
@@ -868,12 +706,6 @@
     "SCANDATE": "2017-09-29",
     "Partition": "Train",
     "TR": 3
-  },
-  {
-    "PTID": "002_S_0295",
-    "SCANDATE": "2011-06-02",
-    "Partition": "Train",
-    "TR": 6.02158
   },
   {
     "PTID": "012_S_5195",
@@ -912,12 +744,6 @@
     "TR": 3
   },
   {
-    "PTID": "073_S_4393",
-    "SCANDATE": "2020-01-17",
-    "Partition": "Train",
-    "TR": 0.607
-  },
-  {
     "PTID": "082_S_4428",
     "SCANDATE": "2017-12-13",
     "Partition": "Train",
@@ -954,12 +780,6 @@
     "TR": 3
   },
   {
-    "PTID": "023_S_0031",
-    "SCANDATE": "2018-04-17",
-    "Partition": "Train",
-    "TR": 0.607
-  },
-  {
     "PTID": "130_S_6043",
     "SCANDATE": "2017-07-06",
     "Partition": "Train",
@@ -970,12 +790,6 @@
     "SCANDATE": "2013-04-22",
     "Partition": "Train",
     "TR": 3
-  },
-  {
-    "PTID": "002_S_4262",
-    "SCANDATE": "2011-10-05",
-    "Partition": "Train",
-    "TR": 6.02158
   },
   {
     "PTID": "070_S_4856",
@@ -1026,18 +840,6 @@
     "TR": 3
   },
   {
-    "PTID": "067_S_4184",
-    "SCANDATE": "2017-11-20",
-    "Partition": "Train",
-    "TR": 0.607
-  },
-  {
-    "PTID": "067_S_2304",
-    "SCANDATE": "2018-08-24",
-    "Partition": "Train",
-    "TR": 0.607
-  },
-  {
     "PTID": "116_S_4453",
     "SCANDATE": "2018-01-29",
     "Partition": "Train",
@@ -1068,22 +870,10 @@
     "TR": 3
   },
   {
-    "PTID": "002_S_5178",
-    "SCANDATE": "2013-12-05",
-    "Partition": "Train",
-    "TR": 3.001
-  },
-  {
     "PTID": "100_S_1286",
     "SCANDATE": "2014-02-20",
     "Partition": "Train",
     "TR": 3
-  },
-  {
-    "PTID": "002_S_0413",
-    "SCANDATE": "2011-06-16",
-    "Partition": "Train",
-    "TR": 6.02158
   },
   {
     "PTID": "021_S_0337",
@@ -1176,12 +966,6 @@
     "TR": 3
   },
   {
-    "PTID": "067_S_4767",
-    "SCANDATE": "2017-06-05",
-    "Partition": "Train",
-    "TR": 0.607
-  },
-  {
     "PTID": "082_S_5278",
     "SCANDATE": "2018-02-16",
     "Partition": "Train",
@@ -1198,12 +982,6 @@
     "SCANDATE": "2017-04-29",
     "Partition": "Train",
     "TR": 3
-  },
-  {
-    "PTID": "002_S_2073",
-    "SCANDATE": "2014-09-17",
-    "Partition": "Train",
-    "TR": 3.004
   },
   {
     "PTID": "068_S_4340",
@@ -1242,12 +1020,6 @@
     "TR": 3
   },
   {
-    "PTID": "007_S_6341",
-    "SCANDATE": "2021-06-28",
-    "Partition": "Train",
-    "TR": 0.607
-  },
-  {
     "PTID": "027_S_6640",
     "SCANDATE": "2021-05-12",
     "Partition": "Train",
@@ -1258,12 +1030,6 @@
     "SCANDATE": "2013-06-12",
     "Partition": "Train",
     "TR": 3
-  },
-  {
-    "PTID": "022_S_6796",
-    "SCANDATE": "2019-09-03",
-    "Partition": "Train",
-    "TR": 0.607
   },
   {
     "PTID": "126_S_4891",
@@ -1296,12 +1062,6 @@
     "TR": 3
   },
   {
-    "PTID": "941_S_6345",
-    "SCANDATE": "2020-09-08",
-    "Partition": "Train",
-    "TR": 0.607
-  },
-  {
     "PTID": "130_S_4294",
     "SCANDATE": "2019-11-27",
     "Partition": "Train",
@@ -1314,34 +1074,16 @@
     "TR": 3
   },
   {
-    "PTID": "007_S_4637",
-    "SCANDATE": "2022-10-20",
-    "Partition": "Train",
-    "TR": 0.607
-  },
-  {
     "PTID": "006_S_4546",
     "SCANDATE": "2012-09-24",
     "Partition": "Train",
     "TR": 3
   },
   {
-    "PTID": "037_S_6377",
-    "SCANDATE": "2020-09-22",
-    "Partition": "Train",
-    "TR": 0.607
-  },
-  {
     "PTID": "006_S_4192",
     "SCANDATE": "2013-10-03",
     "Partition": "Train",
     "TR": 3
-  },
-  {
-    "PTID": "037_S_6216",
-    "SCANDATE": "2018-05-03",
-    "Partition": "Train",
-    "TR": 0.607
   },
   {
     "PTID": "127_S_4928",
@@ -1362,12 +1104,6 @@
     "TR": 3
   },
   {
-    "PTID": "002_S_5018",
-    "SCANDATE": "2012-11-08",
-    "Partition": "Train",
-    "TR": 3.001
-  },
-  {
     "PTID": "123_S_6891",
     "SCANDATE": "2020-10-27",
     "Partition": "Train",
@@ -1378,12 +1114,6 @@
     "SCANDATE": "2012-03-19",
     "Partition": "Train",
     "TR": 3
-  },
-  {
-    "PTID": "023_S_4115",
-    "SCANDATE": "2021-04-26",
-    "Partition": "Train",
-    "TR": 0.607
   },
   {
     "PTID": "006_S_4192",
@@ -1402,12 +1132,6 @@
     "SCANDATE": "2019-03-26",
     "Partition": "Train",
     "TR": 3
-  },
-  {
-    "PTID": "023_S_1190",
-    "SCANDATE": "2019-02-25",
-    "Partition": "Train",
-    "TR": 0.607
   },
   {
     "PTID": "018_S_2155",
@@ -1554,12 +1278,6 @@
     "TR": 3
   },
   {
-    "PTID": "067_S_6529",
-    "SCANDATE": "2021-08-18",
-    "Partition": "Train",
-    "TR": 0.607
-  },
-  {
     "PTID": "135_S_6840",
     "SCANDATE": "2019-12-05",
     "Partition": "Train",
@@ -1570,12 +1288,6 @@
     "SCANDATE": "2013-09-23",
     "Partition": "Train",
     "TR": 3
-  },
-  {
-    "PTID": "012_S_4188",
-    "SCANDATE": "2015-10-08",
-    "Partition": "Train",
-    "TR": 3.005
   },
   {
     "PTID": "126_S_6721",
@@ -1596,18 +1308,6 @@
     "TR": 3
   },
   {
-    "PTID": "002_S_0729",
-    "SCANDATE": "2011-08-16",
-    "Partition": "Train",
-    "TR": 6.02158
-  },
-  {
-    "PTID": "941_S_6854",
-    "SCANDATE": "2022-02-22",
-    "Partition": "Train",
-    "TR": 0.607
-  },
-  {
     "PTID": "018_S_4696",
     "SCANDATE": "2012-05-01",
     "Partition": "Train",
@@ -1626,12 +1326,6 @@
     "TR": 3
   },
   {
-    "PTID": "037_S_6377",
-    "SCANDATE": "2018-07-06",
-    "Partition": "Train",
-    "TR": 0.607
-  },
-  {
     "PTID": "168_S_6828",
     "SCANDATE": "2019-10-14",
     "Partition": "Train",
@@ -1642,18 +1336,6 @@
     "SCANDATE": "2021-06-23",
     "Partition": "Train",
     "TR": 3
-  },
-  {
-    "PTID": "941_S_4365",
-    "SCANDATE": "2021-08-31",
-    "Partition": "Train",
-    "TR": 0.607
-  },
-  {
-    "PTID": "037_S_6377",
-    "SCANDATE": "2019-08-08",
-    "Partition": "Train",
-    "TR": 0.607
   },
   {
     "PTID": "129_S_6784",
@@ -1680,12 +1362,6 @@
     "TR": 3
   },
   {
-    "PTID": "036_S_6179",
-    "SCANDATE": "2020-09-01",
-    "Partition": "Train",
-    "TR": 0.788
-  },
-  {
     "PTID": "035_S_4114",
     "SCANDATE": "2019-10-08",
     "Partition": "Train",
@@ -1702,12 +1378,6 @@
     "SCANDATE": "2020-02-20",
     "Partition": "Train",
     "TR": 3
-  },
-  {
-    "PTID": "012_S_4094",
-    "SCANDATE": "2013-07-15",
-    "Partition": "Train",
-    "TR": 3.00044
   },
   {
     "PTID": "123_S_6825",
@@ -1734,18 +1404,6 @@
     "TR": 3
   },
   {
-    "PTID": "022_S_6796",
-    "SCANDATE": "2021-08-24",
-    "Partition": "Train",
-    "TR": 0.607
-  },
-  {
-    "PTID": "012_S_4094",
-    "SCANDATE": "2015-08-27",
-    "Partition": "Train",
-    "TR": 3.005
-  },
-  {
     "PTID": "136_S_4189",
     "SCANDATE": "2012-08-02",
     "Partition": "Train",
@@ -1768,12 +1426,6 @@
     "SCANDATE": "2013-04-02",
     "Partition": "Train",
     "TR": 3
-  },
-  {
-    "PTID": "023_S_1190",
-    "SCANDATE": "2019-10-30",
-    "Partition": "Train",
-    "TR": 0.607
   },
   {
     "PTID": "130_S_4415",
@@ -1818,12 +1470,6 @@
     "TR": 3
   },
   {
-    "PTID": "023_S_4115",
-    "SCANDATE": "2019-01-15",
-    "Partition": "Train",
-    "TR": 0.607
-  },
-  {
     "PTID": "135_S_7003",
     "SCANDATE": "2021-09-20",
     "Partition": "Train",
@@ -1846,12 +1492,6 @@
     "SCANDATE": "2017-06-29",
     "Partition": "Train",
     "TR": 3
-  },
-  {
-    "PTID": "127_S_6241",
-    "SCANDATE": "2021-06-14",
-    "Partition": "Train",
-    "TR": 0.607
   },
   {
     "PTID": "012_S_4188",
@@ -1878,12 +1518,6 @@
     "TR": 3
   },
   {
-    "PTID": "023_S_4115",
-    "SCANDATE": "2020-01-13",
-    "Partition": "Train",
-    "TR": 0.607
-  },
-  {
     "PTID": "098_S_6601",
     "SCANDATE": "2018-10-16",
     "Partition": "Train",
@@ -1900,12 +1534,6 @@
     "SCANDATE": "2016-01-29",
     "Partition": "Train",
     "TR": 3
-  },
-  {
-    "PTID": "036_S_4538",
-    "SCANDATE": "2020-09-14",
-    "Partition": "Train",
-    "TR": 0.788
   },
   {
     "PTID": "130_S_2403",
@@ -1974,12 +1602,6 @@
     "TR": 3
   },
   {
-    "PTID": "036_S_6179",
-    "SCANDATE": "2019-05-07",
-    "Partition": "Train",
-    "TR": 0.788
-  },
-  {
     "PTID": "127_S_6549",
     "SCANDATE": "2020-10-29",
     "Partition": "Train",
@@ -2002,12 +1624,6 @@
     "SCANDATE": "2019-04-30",
     "Partition": "Train",
     "TR": 3
-  },
-  {
-    "PTID": "067_S_7033",
-    "SCANDATE": "2022-01-03",
-    "Partition": "Train",
-    "TR": 0.607
   },
   {
     "PTID": "129_S_0778",
@@ -2034,12 +1650,6 @@
     "TR": 3
   },
   {
-    "PTID": "002_S_5018",
-    "SCANDATE": "2013-05-16",
-    "Partition": "Train",
-    "TR": 3.001
-  },
-  {
     "PTID": "032_S_6602",
     "SCANDATE": "2018-10-11",
     "Partition": "Train",
@@ -2064,12 +1674,6 @@
     "TR": 3
   },
   {
-    "PTID": "067_S_4782",
-    "SCANDATE": "2021-10-05",
-    "Partition": "Train",
-    "TR": 0.607
-  },
-  {
     "PTID": "130_S_4730",
     "SCANDATE": "2012-12-19",
     "Partition": "Train",
@@ -2092,18 +1696,6 @@
     "SCANDATE": "2018-08-21",
     "Partition": "Train",
     "TR": 3
-  },
-  {
-    "PTID": "002_S_0729",
-    "SCANDATE": "2012-08-07",
-    "Partition": "Train",
-    "TR": 3.001
-  },
-  {
-    "PTID": "037_S_4030",
-    "SCANDATE": "2018-09-10",
-    "Partition": "Train",
-    "TR": 0.607
   },
   {
     "PTID": "129_S_6784",
@@ -2134,12 +1726,6 @@
     "SCANDATE": "2021-11-01",
     "Partition": "Train",
     "TR": 3
-  },
-  {
-    "PTID": "023_S_6661",
-    "SCANDATE": "2020-02-26",
-    "Partition": "Train",
-    "TR": 0.607
   },
   {
     "PTID": "130_S_4984",
@@ -2176,12 +1762,6 @@
     "SCANDATE": "2017-10-03",
     "Partition": "Train",
     "TR": 3
-  },
-  {
-    "PTID": "941_S_6854",
-    "SCANDATE": "2020-02-14",
-    "Partition": "Train",
-    "TR": 0.607
   },
   {
     "PTID": "168_S_6828",
@@ -2238,12 +1818,6 @@
     "TR": 3
   },
   {
-    "PTID": "022_S_6863",
-    "SCANDATE": "2020-08-20",
-    "Partition": "Train",
-    "TR": 0.607
-  },
-  {
     "PTID": "041_S_4974",
     "SCANDATE": "2017-10-05",
     "Partition": "Train",
@@ -2286,18 +1860,6 @@
     "TR": 3
   },
   {
-    "PTID": "023_S_4502",
-    "SCANDATE": "2014-04-23",
-    "Partition": "Train",
-    "TR": 2
-  },
-  {
-    "PTID": "002_S_0729",
-    "SCANDATE": "2013-08-16",
-    "Partition": "Train",
-    "TR": 3.001
-  },
-  {
     "PTID": "041_S_4143",
     "SCANDATE": "2018-07-12",
     "Partition": "Train",
@@ -2310,12 +1872,6 @@
     "TR": 3
   },
   {
-    "PTID": "941_S_6345",
-    "SCANDATE": "2019-05-29",
-    "Partition": "Train",
-    "TR": 0.607
-  },
-  {
     "PTID": "127_S_1427",
     "SCANDATE": "2018-10-12",
     "Partition": "Train",
@@ -2326,18 +1882,6 @@
     "SCANDATE": "2017-09-05",
     "Partition": "Train",
     "TR": 3
-  },
-  {
-    "PTID": "023_S_6661",
-    "SCANDATE": "2021-04-14",
-    "Partition": "Train",
-    "TR": 0.607
-  },
-  {
-    "PTID": "012_S_5121",
-    "SCANDATE": "2015-04-30",
-    "Partition": "Train",
-    "TR": 3.005
   },
   {
     "PTID": "168_S_6634",
@@ -2382,12 +1926,6 @@
     "TR": 3
   },
   {
-    "PTID": "002_S_4521",
-    "SCANDATE": "2016-03-24",
-    "Partition": "Train",
-    "TR": 3.025
-  },
-  {
     "PTID": "006_S_4153",
     "SCANDATE": "2012-03-27",
     "Partition": "Train",
@@ -2404,12 +1942,6 @@
     "SCANDATE": "2021-02-23",
     "Partition": "Train",
     "TR": 3
-  },
-  {
-    "PTID": "341_S_6820",
-    "SCANDATE": "2019-09-25",
-    "Partition": "Train",
-    "TR": 0.607
   },
   {
     "PTID": "126_S_4891",
@@ -2440,12 +1972,6 @@
     "SCANDATE": "2022-06-20",
     "Partition": "Train",
     "TR": 3
-  },
-  {
-    "PTID": "016_S_5031",
-    "SCANDATE": "2015-05-04",
-    "Partition": "Train",
-    "TR": 2.925
   },
   {
     "PTID": "012_S_6073",
@@ -2538,34 +2064,16 @@
     "TR": 3
   },
   {
-    "PTID": "002_S_4746",
-    "SCANDATE": "2012-05-29",
-    "Partition": "Train",
-    "TR": 3.001
-  },
-  {
     "PTID": "041_S_1418",
     "SCANDATE": "2017-08-04",
     "Partition": "Train",
     "TR": 3
   },
   {
-    "PTID": "012_S_4012",
-    "SCANDATE": "2013-05-16",
-    "Partition": "Train",
-    "TR": 3.00044
-  },
-  {
     "PTID": "094_S_2238",
     "SCANDATE": "2018-01-25",
     "Partition": "Train",
     "TR": 3
-  },
-  {
-    "PTID": "002_S_4799",
-    "SCANDATE": "2013-01-10",
-    "Partition": "Train",
-    "TR": 6.02158
   },
   {
     "PTID": "013_S_4917",
@@ -2670,12 +2178,6 @@
     "TR": 3
   },
   {
-    "PTID": "941_S_6345",
-    "SCANDATE": "2018-05-10",
-    "Partition": "Train",
-    "TR": 0.607
-  },
-  {
     "PTID": "021_S_4744",
     "SCANDATE": "2017-07-13",
     "Partition": "Train",
@@ -2722,12 +2224,6 @@
     "SCANDATE": "2011-11-10",
     "Partition": "Train",
     "TR": 3
-  },
-  {
-    "PTID": "002_S_4654",
-    "SCANDATE": "2012-04-05",
-    "Partition": "Train",
-    "TR": 3.001
   },
   {
     "PTID": "130_S_4925",
@@ -2778,12 +2274,6 @@
     "TR": 3
   },
   {
-    "PTID": "002_S_4219",
-    "SCANDATE": "2011-09-14",
-    "Partition": "Train",
-    "TR": 6.02158
-  },
-  {
     "PTID": "100_S_2351",
     "SCANDATE": "2011-05-13",
     "Partition": "Train",
@@ -2794,12 +2284,6 @@
     "SCANDATE": "2017-06-22",
     "Partition": "Train",
     "TR": 3
-  },
-  {
-    "PTID": "109_S_4594",
-    "SCANDATE": "2016-05-02",
-    "Partition": "Train",
-    "TR": 2.925
   },
   {
     "PTID": "130_S_4605",
@@ -2826,12 +2310,6 @@
     "TR": 3
   },
   {
-    "PTID": "002_S_4521",
-    "SCANDATE": "2012-02-17",
-    "Partition": "Train",
-    "TR": 3.001
-  },
-  {
     "PTID": "032_S_6279",
     "SCANDATE": "2019-06-27",
     "Partition": "Train",
@@ -2850,12 +2328,6 @@
     "TR": 3
   },
   {
-    "PTID": "007_S_4272",
-    "SCANDATE": "2018-01-16",
-    "Partition": "Train",
-    "TR": 0.607
-  },
-  {
     "PTID": "037_S_4071",
     "SCANDATE": "2017-03-27",
     "Partition": "Train",
@@ -2872,12 +2344,6 @@
     "SCANDATE": "2011-11-21",
     "Partition": "Train",
     "TR": 3
-  },
-  {
-    "PTID": "002_S_2043",
-    "SCANDATE": "2011-09-16",
-    "Partition": "Train",
-    "TR": 6.02158
   },
   {
     "PTID": "301_S_6326",
@@ -2904,22 +2370,10 @@
     "TR": 3
   },
   {
-    "PTID": "007_S_5265",
-    "SCANDATE": "2021-09-20",
-    "Partition": "Train",
-    "TR": 0.607
-  },
-  {
     "PTID": "027_S_2245",
     "SCANDATE": "2017-02-01",
     "Partition": "Train",
     "TR": 3
-  },
-  {
-    "PTID": "002_S_4251",
-    "SCANDATE": "2011-09-26",
-    "Partition": "Train",
-    "TR": 6.02158
   },
   {
     "PTID": "013_S_4791",
@@ -2938,12 +2392,6 @@
     "SCANDATE": "2017-04-19",
     "Partition": "Train",
     "TR": 3
-  },
-  {
-    "PTID": "002_S_2073",
-    "SCANDATE": "2011-09-22",
-    "Partition": "Train",
-    "TR": 6.02158
   },
   {
     "PTID": "027_S_6034",
@@ -3036,18 +2484,6 @@
     "TR": 3
   },
   {
-    "PTID": "007_S_6421",
-    "SCANDATE": "2018-06-05",
-    "Partition": "Train",
-    "TR": 0.607
-  },
-  {
-    "PTID": "073_S_2191",
-    "SCANDATE": "2020-01-24",
-    "Partition": "Train",
-    "TR": 0.607
-  },
-  {
     "PTID": "130_S_6047",
     "SCANDATE": "2017-07-27",
     "Partition": "Train",
@@ -3120,22 +2556,10 @@
     "TR": 3
   },
   {
-    "PTID": "024_S_2239",
-    "SCANDATE": "2019-06-03",
-    "Partition": "Train",
-    "TR": 0.607
-  },
-  {
     "PTID": "100_S_4556",
     "SCANDATE": "2012-11-26",
     "Partition": "Train",
     "TR": 3
-  },
-  {
-    "PTID": "023_S_6334",
-    "SCANDATE": "2018-05-04",
-    "Partition": "Train",
-    "TR": 0.607
   },
   {
     "PTID": "018_S_4809",
@@ -3154,12 +2578,6 @@
     "SCANDATE": "2019-04-08",
     "Partition": "Train",
     "TR": 3
-  },
-  {
-    "PTID": "002_S_4270",
-    "SCANDATE": "2015-12-04",
-    "Partition": "Train",
-    "TR": 3.025
   },
   {
     "PTID": "128_S_0200",
@@ -3210,28 +2628,10 @@
     "TR": 3
   },
   {
-    "PTID": "023_S_6356",
-    "SCANDATE": "2018-05-29",
-    "Partition": "Train",
-    "TR": 0.607
-  },
-  {
     "PTID": "003_S_1122",
     "SCANDATE": "2017-05-18",
     "Partition": "Train",
     "TR": 3
-  },
-  {
-    "PTID": "024_S_6033",
-    "SCANDATE": "2019-07-10",
-    "Partition": "Train",
-    "TR": 0.607
-  },
-  {
-    "PTID": "023_S_2068",
-    "SCANDATE": "2017-12-15",
-    "Partition": "Train",
-    "TR": 0.607
   },
   {
     "PTID": "130_S_4250",
@@ -3256,12 +2656,6 @@
     "SCANDATE": "2017-08-21",
     "Partition": "Train",
     "TR": 3
-  },
-  {
-    "PTID": "067_S_6474",
-    "SCANDATE": "2018-06-27",
-    "Partition": "Train",
-    "TR": 0.607
   },
   {
     "PTID": "109_S_6364",
@@ -3292,12 +2686,6 @@
     "SCANDATE": "2012-11-02",
     "Partition": "Train",
     "TR": 3
-  },
-  {
-    "PTID": "128_S_4742",
-    "SCANDATE": "2018-08-21",
-    "Partition": "Train",
-    "TR": 0.607
   },
   {
     "PTID": "031_S_4042",
@@ -3378,12 +2766,6 @@
     "TR": 3
   },
   {
-    "PTID": "037_S_6222",
-    "SCANDATE": "2018-05-30",
-    "Partition": "Train",
-    "TR": 0.607
-  },
-  {
     "PTID": "013_S_4595",
     "SCANDATE": "2012-04-20",
     "Partition": "Train",
@@ -3418,12 +2800,6 @@
     "SCANDATE": "2016-02-04",
     "Partition": "Train",
     "TR": 3
-  },
-  {
-    "PTID": "036_S_2380",
-    "SCANDATE": "2019-06-05",
-    "Partition": "Train",
-    "TR": 0.788
   },
   {
     "PTID": "301_S_6056",
@@ -3462,12 +2838,6 @@
     "TR": 3
   },
   {
-    "PTID": "002_S_4229",
-    "SCANDATE": "2011-09-21",
-    "Partition": "Train",
-    "TR": 6.02158
-  },
-  {
     "PTID": "035_S_0156",
     "SCANDATE": "2017-10-19",
     "Partition": "Train",
@@ -3480,34 +2850,16 @@
     "TR": 3
   },
   {
-    "PTID": "002_S_4447",
-    "SCANDATE": "2014-02-14",
-    "Partition": "Train",
-    "TR": 6.02353
-  },
-  {
     "PTID": "018_S_2155",
     "SCANDATE": "2010-12-02",
     "Partition": "Train",
     "TR": 3
   },
   {
-    "PTID": "067_S_4782",
-    "SCANDATE": "2017-08-29",
-    "Partition": "Train",
-    "TR": 0.607
-  },
-  {
     "PTID": "002_S_1268",
     "SCANDATE": "2011-04-13",
     "Partition": "Train",
     "TR": 3
-  },
-  {
-    "PTID": "067_S_6525",
-    "SCANDATE": "2019-06-05",
-    "Partition": "Train",
-    "TR": 0.607
   },
   {
     "PTID": "127_S_6330",
@@ -3534,22 +2886,10 @@
     "TR": 3
   },
   {
-    "PTID": "002_S_4473",
-    "SCANDATE": "2014-02-27",
-    "Partition": "Train",
-    "TR": 6.02353
-  },
-  {
     "PTID": "021_S_4254",
     "SCANDATE": "2019-04-08",
     "Partition": "Train",
     "TR": 3
-  },
-  {
-    "PTID": "002_S_1155",
-    "SCANDATE": "2015-01-05",
-    "Partition": "Train",
-    "TR": 6.02302
   },
   {
     "PTID": "141_S_1378",
@@ -3594,12 +2934,6 @@
     "TR": 3
   },
   {
-    "PTID": "067_S_0059",
-    "SCANDATE": "2017-12-20",
-    "Partition": "Train",
-    "TR": 0.607
-  },
-  {
     "PTID": "035_S_4785",
     "SCANDATE": "2019-12-05",
     "Partition": "Train",
@@ -3630,18 +2964,6 @@
     "TR": 3
   },
   {
-    "PTID": "067_S_6529",
-    "SCANDATE": "2018-08-14",
-    "Partition": "Train",
-    "TR": 0.607
-  },
-  {
-    "PTID": "023_S_6369",
-    "SCANDATE": "2018-05-18",
-    "Partition": "Train",
-    "TR": 0.607
-  },
-  {
     "PTID": "005_S_6427",
     "SCANDATE": "2018-06-25",
     "Partition": "Train",
@@ -3666,12 +2988,6 @@
     "TR": 3
   },
   {
-    "PTID": "016_S_4121",
-    "SCANDATE": "2015-09-21",
-    "Partition": "Train",
-    "TR": 2.875
-  },
-  {
     "PTID": "135_S_4446",
     "SCANDATE": "2017-06-13",
     "Partition": "Train",
@@ -3688,12 +3004,6 @@
     "SCANDATE": "2011-06-27",
     "Partition": "Train",
     "TR": 3
-  },
-  {
-    "PTID": "002_S_2010",
-    "SCANDATE": "2010-06-24",
-    "Partition": "Train",
-    "TR": 2.25
   },
   {
     "PTID": "141_S_2333",
@@ -3762,12 +3072,6 @@
     "TR": 3
   },
   {
-    "PTID": "023_S_4448",
-    "SCANDATE": "2017-12-04",
-    "Partition": "Test",
-    "TR": 0.607
-  },
-  {
     "PTID": "041_S_4200",
     "SCANDATE": "2017-10-26",
     "Partition": "Test",
@@ -3798,22 +3102,10 @@
     "TR": 3
   },
   {
-    "PTID": "007_S_4620",
-    "SCANDATE": "2017-12-05",
-    "Partition": "Test",
-    "TR": 0.607
-  },
-  {
     "PTID": "003_S_4288",
     "SCANDATE": "2017-10-03",
     "Partition": "Test",
     "TR": 3
-  },
-  {
-    "PTID": "002_S_5256",
-    "SCANDATE": "2013-07-15",
-    "Partition": "Test",
-    "TR": 3.001
   },
   {
     "PTID": "027_S_5093",
@@ -3828,34 +3120,16 @@
     "TR": 3
   },
   {
-    "PTID": "007_S_4488",
-    "SCANDATE": "2017-09-12",
-    "Partition": "Test",
-    "TR": 0.607
-  },
-  {
     "PTID": "003_S_4119",
     "SCANDATE": "2019-10-29",
     "Partition": "Test",
     "TR": 3
   },
   {
-    "PTID": "012_S_4026",
-    "SCANDATE": "2011-05-26",
-    "Partition": "Test",
-    "TR": 3.09
-  },
-  {
     "PTID": "037_S_6031",
     "SCANDATE": "2017-07-03",
     "Partition": "Test",
     "TR": 3
-  },
-  {
-    "PTID": "012_S_5121",
-    "SCANDATE": "2013-03-15",
-    "Partition": "Test",
-    "TR": 3.001
   },
   {
     "PTID": "041_S_5141",
@@ -3868,12 +3142,6 @@
     "SCANDATE": "2017-11-15",
     "Partition": "Test",
     "TR": 3
-  },
-  {
-    "PTID": "128_S_0205",
-    "SCANDATE": "2018-07-17",
-    "Partition": "Test",
-    "TR": 0.607
   },
   {
     "PTID": "013_S_2389",
@@ -3928,12 +3196,6 @@
     "SCANDATE": "2019-11-02",
     "Partition": "Test",
     "TR": 3
-  },
-  {
-    "PTID": "022_S_6863",
-    "SCANDATE": "2021-10-27",
-    "Partition": "Test",
-    "TR": 0.607
   },
   {
     "PTID": "114_S_4404",
@@ -4044,12 +3306,6 @@
     "TR": 3
   },
   {
-    "PTID": "941_S_6854",
-    "SCANDATE": "2021-04-05",
-    "Partition": "Test",
-    "TR": 0.607
-  },
-  {
     "PTID": "130_S_4997",
     "SCANDATE": "2012-11-19",
     "Partition": "Test",
@@ -4060,12 +3316,6 @@
     "SCANDATE": "2012-10-30",
     "Partition": "Test",
     "TR": 3
-  },
-  {
-    "PTID": "067_S_2304",
-    "SCANDATE": "2019-08-09",
-    "Partition": "Test",
-    "TR": 0.607
   },
   {
     "PTID": "021_S_5237",
@@ -4110,12 +3360,6 @@
     "TR": 3
   },
   {
-    "PTID": "002_S_4262",
-    "SCANDATE": "2013-11-06",
-    "Partition": "Test",
-    "TR": 3.001
-  },
-  {
     "PTID": "136_S_0107",
     "SCANDATE": "2012-09-06",
     "Partition": "Test",
@@ -4144,12 +3388,6 @@
     "SCANDATE": "2011-11-16",
     "Partition": "Test",
     "TR": 3
-  },
-  {
-    "PTID": "037_S_6144",
-    "SCANDATE": "2020-03-18",
-    "Partition": "Test",
-    "TR": 0.607
   },
   {
     "PTID": "006_S_6243",
@@ -4182,12 +3420,6 @@
     "TR": 3
   },
   {
-    "PTID": "941_S_6333",
-    "SCANDATE": "2022-08-15",
-    "Partition": "Test",
-    "TR": 0.607
-  },
-  {
     "PTID": "031_S_4149",
     "SCANDATE": "2011-08-05",
     "Partition": "Test",
@@ -4198,12 +3430,6 @@
     "SCANDATE": "2017-10-02",
     "Partition": "Test",
     "TR": 3
-  },
-  {
-    "PTID": "052_S_1352",
-    "SCANDATE": "2018-09-13",
-    "Partition": "Test",
-    "TR": 0.607
   },
   {
     "PTID": "014_S_6199",
@@ -4240,12 +3466,6 @@
     "SCANDATE": "2017-08-18",
     "Partition": "Val",
     "TR": 3
-  },
-  {
-    "PTID": "002_S_0685",
-    "SCANDATE": "2011-07-08",
-    "Partition": "Val",
-    "TR": 6.02158
   },
   {
     "PTID": "127_S_5185",
@@ -4296,12 +3516,6 @@
     "TR": 3
   },
   {
-    "PTID": "036_S_4389",
-    "SCANDATE": "2021-02-24",
-    "Partition": "Val",
-    "TR": 0.788
-  },
-  {
     "PTID": "027_S_6001",
     "SCANDATE": "2017-01-11",
     "Partition": "Val",
@@ -4338,12 +3552,6 @@
     "TR": 3
   },
   {
-    "PTID": "067_S_6045",
-    "SCANDATE": "2017-07-13",
-    "Partition": "Val",
-    "TR": 0.607
-  },
-  {
     "PTID": "114_S_6063",
     "SCANDATE": "2020-02-25",
     "Partition": "Val",
@@ -4366,12 +3574,6 @@
     "SCANDATE": "2021-10-27",
     "Partition": "Val",
     "TR": 3
-  },
-  {
-    "PTID": "023_S_6661",
-    "SCANDATE": "2019-01-07",
-    "Partition": "Val",
-    "TR": 0.607
   },
   {
     "PTID": "098_S_0896",
@@ -4398,34 +3600,16 @@
     "TR": 3
   },
   {
-    "PTID": "941_S_6962",
-    "SCANDATE": "2022-06-29",
-    "Partition": "Val",
-    "TR": 0.607
-  },
-  {
     "PTID": "168_S_6634",
     "SCANDATE": "2021-02-16",
     "Partition": "Val",
     "TR": 3
   },
   {
-    "PTID": "036_S_2380",
-    "SCANDATE": "2021-01-12",
-    "Partition": "Val",
-    "TR": 0.788
-  },
-  {
     "PTID": "130_S_4542",
     "SCANDATE": "2013-03-06",
     "Partition": "Val",
     "TR": 3
-  },
-  {
-    "PTID": "127_S_6241",
-    "SCANDATE": "2020-08-25",
-    "Partition": "Val",
-    "TR": 0.607
   },
   {
     "PTID": "116_S_6100",
@@ -4566,18 +3750,6 @@
     "TR": 3
   },
   {
-    "PTID": "002_S_4237",
-    "SCANDATE": "2011-09-26",
-    "Partition": "Val",
-    "TR": 6.02158
-  },
-  {
-    "PTID": "073_S_4216",
-    "SCANDATE": "2020-01-27",
-    "Partition": "Val",
-    "TR": 0.607
-  },
-  {
     "PTID": "031_S_4721",
     "SCANDATE": "2012-11-27",
     "Partition": "Val",
@@ -4606,12 +3778,6 @@
     "SCANDATE": "2018-08-07",
     "Partition": "Val",
     "TR": 3
-  },
-  {
-    "PTID": "007_S_6341",
-    "SCANDATE": "2018-04-30",
-    "Partition": "Val",
-    "TR": 0.607
   },
   {
     "PTID": "027_S_6002",
@@ -4648,12 +3814,6 @@
     "SCANDATE": "2011-04-26",
     "Partition": "Val",
     "TR": 3
-  },
-  {
-    "PTID": "002_S_4171",
-    "SCANDATE": "2011-08-08",
-    "Partition": "Val",
-    "TR": 6.02158
   },
   {
     "PTID": "011_S_4278",

@@ -6,10 +6,14 @@ Creates JSON files mapping sample keys to target labels for:
 - Clinical classification: diagnosis (3-class), ad_vs_cn (binary), pmci_vs_smci (binary)
 
 Sample key format: {PTID}_{SCANDATE} (e.g., 168_S_6049_2020-10-12)
+
+Environment variables:
+- ADNI_CSV_PATH: Path to benchmark CSV with metadata (contains sensitive data, not in repo)
 """
 
 import json
 import logging
+import os
 from pathlib import Path
 
 import numpy as np
@@ -25,10 +29,8 @@ _logger = logging.getLogger(__name__)
 
 ROOT = Path(__file__).parents[1]
 
-# TODO: replace this absolute lightning path with relative path to `metadata/`
-ADNI_CSV_PATH = Path(
-    "/teamspace/studios/this_studio/ADNI_fmriprep/valid_adni_benchmark_split_final.csv"
-)
+# CSV contains sensitive data, kept outside repo
+ADNI_CSV_PATH = Path(os.environ["ADNI_CSV_PATH"])
 
 # Gender mapping (classification target)
 GENDER_MAP = {"Female": 0, "Male": 1}
@@ -176,8 +178,8 @@ def main():
             }
         else:
             # Quantile binning for age
-            targets, bins, counts, num_bins = quantize(numeric)
-            bin_stats = build_bin_stats(numeric, targets, num_bins)
+            targets, bins, counts = quantize(numeric, PRIMARY_BINS)
+            bin_stats = build_bin_stats(numeric, targets, PRIMARY_BINS)
             info = {
                 "target": target,
                 "column": col,
@@ -185,7 +187,7 @@ def main():
                 "subjects_total": int(df.shape[0]),
                 "bins": bins,
                 "label_counts": counts.tolist(),
-                "num_bins": num_bins,
+                "num_bins": PRIMARY_BINS,
                 "bin_stats": bin_stats,
             }
 

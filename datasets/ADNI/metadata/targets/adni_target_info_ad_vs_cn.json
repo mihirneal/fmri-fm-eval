@@ -1,15 +1,15 @@
 {
     "target": "ad_vs_cn",
     "column": "Label_Diag_AD_vs_CN",
-    "na_count": 256,
-    "subjects_total": 781,
+    "na_count": 211,
+    "subjects_total": 641,
     "classes": [
         "CN",
         "Dementia"
     ],
     "label_counts": [
-        259,
-        266
+        212,
+        218
     ],
     "note": "Excludes MCI samples (only CN vs Dementia)"
 }

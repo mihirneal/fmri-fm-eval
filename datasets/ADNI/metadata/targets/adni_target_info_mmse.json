@@ -1,8 +1,8 @@
 {
     "target": "mmse",
     "column": "Score_MMSE",
-    "na_count": 5,
-    "subjects_total": 781,
+    "na_count": 3,
+    "subjects_total": 641,
     "bins": [
         23,
         27
@@ -13,30 +13,30 @@
         "Normal (28-30)"
     ],
     "label_counts": [
-        171,
-        189,
-        416
+        142,
+        161,
+        335
     ],
     "num_bins": 3,
     "bin_stats": [
         {
             "bin": 0,
-            "count": 171,
-            "fraction": 0.2204,
+            "count": 142,
+            "fraction": 0.2226,
             "min": 5.0,
             "max": 23.0
         },
         {
             "bin": 1,
-            "count": 189,
-            "fraction": 0.2436,
+            "count": 161,
+            "fraction": 0.2524,
             "min": 24.0,
             "max": 27.0
         },
         {
             "bin": 2,
-            "count": 416,
-            "fraction": 0.5361,
+            "count": 335,
+            "fraction": 0.5251,
             "min": 28.0,
             "max": 30.0
         }

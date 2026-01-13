@@ -1,8 +1,8 @@
 {
     "target": "cdrsb",
     "column": "Score_CDRSB",
-    "na_count": 6,
-    "subjects_total": 781,
+    "na_count": 4,
+    "subjects_total": 641,
     "bins": [
         0.5,
         4.5
@@ -13,30 +13,30 @@
         "Moderate/Severe (5+)"
     ],
     "label_counts": [
-        342,
-        283,
-        150
+        277,
+        241,
+        119
     ],
     "num_bins": 3,
     "bin_stats": [
         {
             "bin": 0,
-            "count": 342,
-            "fraction": 0.4413,
+            "count": 277,
+            "fraction": 0.4349,
             "min": 0.0,
             "max": 0.5
         },
         {
             "bin": 1,
-            "count": 283,
-            "fraction": 0.3652,
+            "count": 241,
+            "fraction": 0.3783,
             "min": 1.0,
             "max": 4.5
         },
         {
             "bin": 2,
-            "count": 150,
-            "fraction": 0.1935,
+            "count": 119,
+            "fraction": 0.1868,
             "min": 5.0,
             "max": 15.0
         }

@@ -1,21 +1,21 @@
-"""Create ADNI evaluation dataset with TR resampling (Arrow format).
+"""Create ADNI evaluation dataset (Arrow format).
 
 This script creates HuggingFace Arrow datasets for ADNI resting-state fMRI:
-- Resamples all BOLD data from original TR to 0.72s
-- Takes single 500 TR sample per session (no windowing)
+- All BOLD data has TR=3.0s (filtered at curation stage)
+- Takes first 100 TRs (5 mins) from each session
 - Uses existing Train/Val/Test split from metadata JSON
 
 Supports parcellations: schaefer400, schaefer400_tians3, flat, a424, mni, mni_cortex
 
-Environment variables:
-- ADNI_FMRIPREP_ROOT: Path to ADNI fMRIPrep root directory
-- ADNI_CURATION_JSON: Path to ADNI curation JSON file (with PTID, SCANDATE, Partition, TR)
+Data paths:
+- Preprocessed data: data/fmriprep/output/
+- Curation JSON: scripts/ADNI_curation.json
+- Output datasets: data/processed/
 """
 
 import argparse
 import json
 import logging
-import os
 import sys
 import tempfile
 from pathlib import Path
@@ -41,16 +41,12 @@ _logger = logging.getLogger(__name__)
 
 ROOT = Path(__file__).parents[1]
 
-# TODO: update this to follow pattern of other datasets:
-# - paths are relative to the dataset root
-# - fmriprep goes in data/fmriprep
-# - outputs go in data/processed (or at least in data/ somewhere)
-ADNI_FMRIPREP_ROOT = Path(os.environ["ADNI_FMRIPREP_ROOT"])
+# Data paths relative to dataset root
+ADNI_FMRIPREP_ROOT = ROOT / "data/fmriprep"
 ADNI_OUTPUT = ADNI_FMRIPREP_ROOT / "output"
-ADNI_CURATION_JSON = Path(os.environ["ADNI_CURATION_JSON"])
+ADNI_CURATION_JSON = ROOT / "scripts/ADNI_curation.json"
 
-# Resample all time series to fixed TR
-# ~80% of ADNI data has TR=3.0s
+# All data has TR=3.0s (filtered at curation stage)
 TARGET_TR = 3.0
 # Keep first 100 TRs (5 mins) from each run
 MAX_TRS = 100
@@ -87,33 +83,23 @@ def main(args):
         return 1
 
     # Load metadata JSON
-    # TODO: how is this curation file generated?
     with ADNI_CURATION_JSON.open() as f:
         curation_data = json.load(f)
     _logger.info("Loaded %d samples from curation JSON", len(curation_data))
 
     # Build samples by split
     samples_by_split = {"train": [], "validation": [], "test": []}
-    missing_tr = 0
-    missing_file = 0
 
     for entry in curation_data:
         ptid = entry["PTID"]
         scandate = entry["SCANDATE"]
         split = SPLIT_MAP[entry["Partition"]]
-
-        # ~80% of curated subjects have TR = 3.0, ~10% have TR ~= 0.6, and the rest have
-        # weird TRs. We only keep the TR = 3.0.
         original_tr = float(entry["TR"])
-        if not original_tr == 3.0:
-            continue
 
         sub = ptid_to_sub(ptid)
         ses = scandate_to_ses(scandate)
 
         # Build file path based on space
-        # All files are curated and are assumed to exist. If not, we will error out.
-        # TODO: we really have to fix these repetitive checks.
         if args.space in {"mni", "mni_cortex", "schaefer400_tians3_buckner7"}:
             # Volumetric MNI path
             file_path = (
@@ -145,11 +131,6 @@ def main(args):
             "scandate": scandate,
         }
         samples_by_split[split].append(sample)
-
-    if missing_file > 0:
-        _logger.warning("Missing %d input files", missing_file)
-    if missing_tr > 0:
-        _logger.warning("Missing TR for %d samples", missing_tr)
 
     for split, samples in samples_by_split.items():
         _logger.info("Num samples (%s): %d", split, len(samples))
@@ -211,25 +192,15 @@ def main(args):
 
 
 def generate_samples(samples: list[dict], *, reader, dim: int):
-    """Generate samples for evaluation dataset with TR resampling."""
+    """Generate samples for evaluation dataset."""
     for sample_info in samples:
         fullpath = sample_info["fullpath"]
-        original_tr = sample_info["original_tr"]
 
         series = reader(fullpath)
 
-        # NOTE: we have updated the resample_timeseries to fix an issue related to out
-        # of bounds time samples when upsampling. earlier datasets were generated before
-        # the fix and could be inconsistent/have issues.
-        if original_tr != TARGET_TR:
-            series = nisc.resample_timeseries(
-                series, tr=original_tr, new_tr=TARGET_TR, kind="pchip"
-            )
-
         T, D = series.shape
-        assert D == dim
-        # All files are curated and are assumed to have enough data. If not, we will error out.
-        assert T >= MAX_TRS, f"Path {fullpath} does not have enough data ({T}<{MAX_TRS})"
+        assert D == dim, f"Path {fullpath} has wrong dimension ({D} != {dim})"
+        assert T >= MAX_TRS, f"Path {fullpath} does not have enough data ({T} < {MAX_TRS})"
 
         series = series[:MAX_TRS]
         series, mean, std = nisc.scale(series)
