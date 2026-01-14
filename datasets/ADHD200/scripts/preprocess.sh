@@ -6,11 +6,11 @@ if [[ -z $1 ]]; then
 fi
 
 subidx=$1
-subid=$(sed -n ${subidx}p "${PWD}/data/metadata/adhd200_subject_list.txt")
+subid=$(sed -n ${subidx}p "${PWD}/metadata/adhd200_subject_list.txt")
 dataset=$(echo $subid | cut -d " " -f 1)
 subid=$(echo $subid | cut -d " " -f 2)
 
-datadir="${PWD}/data/sourcedata/RawDataBIDS/${dataset}"
+datadir="${PWD}/data/RawDataBIDS/${dataset}"
 outdir="${PWD}/data/fmriprep/${dataset}"
 logdir="${PWD}/logs/fmriprep"
 
