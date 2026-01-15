@@ -13,7 +13,8 @@ spaces=(
     schaefer400_tians3_buckner7
 )
 
-SPACEIDS="0 1 2 3 4 6"
+# SPACEIDS="0 1 2 3 4 6"
+SPACEIDS="3 4 5 6"
 # ROOT="data/fmriprep"
 ROOT="s3://medarc/fmri-fm-eval/PPMI/fmriprep"
 OUT_ROOT="s3://medarc/fmri-datasets/eval"

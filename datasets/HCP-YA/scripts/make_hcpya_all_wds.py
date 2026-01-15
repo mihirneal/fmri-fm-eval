@@ -93,7 +93,7 @@ def main(args):
     batch_series_paths = sorted(meta_df.loc[sub_mask, "path"].values)
 
     # volume space for a424 and mni, otherwise cifti space
-    if args.space in {"a424", "mni", "mni_cortex"}:
+    if args.space in readers.VOLUME_SPACES:
         batch_series_paths = [
             p.replace("_Atlas_MSMAll.dtseries.nii", ".nii.gz") for p in batch_series_paths
         ]

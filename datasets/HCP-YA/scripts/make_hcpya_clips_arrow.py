@@ -1,6 +1,7 @@
 import argparse
 import json
 import logging
+import os
 import sys
 import tempfile
 from concurrent.futures import ThreadPoolExecutor
@@ -9,7 +10,8 @@ from pathlib import Path
 import datasets as hfds
 import numpy as np
 import pandas as pd
-from cloudpathlib import AnyPath, CloudPath
+from cloudpathlib import AnyPath, CloudPath, S3Client, S3Path
+from boto3.s3.transfer import TransferConfig
 
 import fmri_fm_eval.nisc as nisc
 import fmri_fm_eval.readers as readers
@@ -58,11 +60,17 @@ SEED = 8581
 
 
 def main(args):
-    outdir = ROOT / f"data/processed/hcpya-clips.{args.space}.arrow"
+    out_root = AnyPath(args.out_root or (ROOT / "data/processed"))
+    outdir = out_root / f"hcpya-clips.{args.space}.arrow"
+
+    upload_client = get_s3_client()
+    if isinstance(outdir, CloudPath):
+        outdir = CloudPath(outdir, client=upload_client)
+
     _logger.info("Generating dataset: %s", outdir)
     if outdir.exists():
-        _logger.warning("Output %s exists; exiting.", outdir)
-        return 1
+        _logger.info("Output %s exists; exiting.", outdir)
+        return
 
     # construct train/val/test splits by combining subject batches.
     # nb, across batches subjects are unrelated. we use the batches to dial how much
@@ -87,11 +95,7 @@ def main(args):
         path_splits[split] = split_paths
         _logger.info(f"Split ({split}): N={len(split_paths)}\n{split_paths[:5]}")
 
-    # volume space for a424 and mni, otherwise cifti space
-    # TODO: hacky, the reader should know what input space it needs. we shouldn't need
-    # to remember this in every script.
-    # TDOO: indeed, this sucks
-    if args.space in {"a424", "mni", "mni_cortex", "schaefer400_tians3_buckner7"}:
+    if args.space in readers.VOLUME_SPACES:
         for split, split_paths in path_splits.items():
             path_splits[split] = [
                 p.replace("_Atlas_MSMAll.dtseries.nii", ".nii.gz") for p in split_paths
@@ -141,8 +145,15 @@ def main(args):
             )
         dataset = hfds.DatasetDict(dataset_dict)
 
-        outdir.parent.mkdir(exist_ok=True, parents=True)
-        dataset.save_to_disk(outdir, max_shard_size="300MB")
+        if isinstance(outdir, S3Path):
+            _logger.info("Saving to s3: %s", outdir)
+            tmp_outdir = Path(tmpdir) / outdir.name
+            # in theory save_to_disk should support s3, but idk why it wasn't working
+            dataset.save_to_disk(tmp_outdir, max_shard_size="300MB")
+            outdir.upload_from(tmp_outdir)
+        else:
+            _logger.info("Saving locally: %s", outdir)
+            dataset.save_to_disk(outdir, max_shard_size="300MB")
 
 
 def generate_samples(paths: list[str], *, root: AnyPath, reader: readers.Reader):
@@ -211,9 +222,30 @@ def parse_hcp_metadata(path: Path) -> dict[str, str]:
     return metadata
 
 
+def get_s3_client():
+    config = TransferConfig(
+        multipart_threshold=8 * 1024 * 1024,
+        multipart_chunksize=8 * 1024 * 1024,
+        max_concurrency=10,
+        use_threads=True,
+    )
+
+    if "R2_ACCESS_KEY_ID" in os.environ:
+        client = S3Client(
+            aws_access_key_id=os.environ["R2_ACCESS_KEY_ID"],
+            aws_secret_access_key=os.environ["R2_SECRET_ACCESS_KEY"],
+            endpoint_url=os.environ["R2_ENDPOINT_URL_S3"],
+            boto3_transfer_config=config,
+        )
+    else:
+        client = S3Client(boto3_transfer_config=config)
+    return client
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=str, default=None)
+    parser.add_argument("--out-root", type=str, default=None)
     parser.add_argument(
         "--space", type=str, default="schaefer400", choices=list(readers.READER_DICT)
     )

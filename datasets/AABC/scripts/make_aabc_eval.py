@@ -7,6 +7,7 @@ Using REST-only matches HCPYA eval (rest1lr) and ensures consistent sample sizes
 Supports all parcellations: schaefer400, schaefer400_tians3, flat, a424, mni
 Follows the same pattern as HCP-YA evaluation datasets.
 """
+
 import argparse
 import json
 import logging
@@ -76,16 +77,6 @@ def main(args):
                 AABC_ROOT,
             )
             return 0
-    if args.space == "a424":
-        try:
-            nisc.fetch_a424(cifti=True)
-        except Exception as exc:
-            _logger.error(
-                "A424 from MSMAll requires a CIFTI parcellation. "
-                "Set A424_CIFTI_PATH or provide volumetric NIfTI inputs. (%s)",
-                exc,
-            )
-            return 1
 
     # Load subject batch splits
     with (ROOT / "metadata/aabc_subject_batch_splits.json").open() as f:
@@ -123,13 +114,15 @@ def main(args):
                 if fullpath.exists():
                     # Create samples for each window
                     for segment in range(max_windows):
-                        samples_by_batch[batch_id].append({
-                            "path": path,
-                            "task": task,
-                            "window_size": window_size,
-                            "segment": segment,
-                            "sub": sub,  # Track subject for stratification
-                        })
+                        samples_by_batch[batch_id].append(
+                            {
+                                "path": path,
+                                "task": task,
+                                "window_size": window_size,
+                                "segment": segment,
+                                "sub": sub,  # Track subject for stratification
+                            }
+                        )
 
     n_total = sum(len(samples) for samples in samples_by_batch.values())
     _logger.info("Num pooled samples (1 visit per subject): %d", n_total)
@@ -195,8 +188,8 @@ def main(args):
             n_test = int(n_strata * SPLIT_RATIOS["test"])
 
             sample_splits["validation"].extend(strata_samples[:n_val])
-            sample_splits["test"].extend(strata_samples[n_val:n_val + n_test])
-            sample_splits["train"].extend(strata_samples[n_val + n_test:])
+            sample_splits["test"].extend(strata_samples[n_val : n_val + n_test])
+            sample_splits["train"].extend(strata_samples[n_val + n_test :])
 
     # Shuffle within each split
     for split in sample_splits:
@@ -213,16 +206,24 @@ def main(args):
         _logger.info("  %s task breakdown: %s", split, task_counts)
 
     # Load and verify metadata distribution across splits
-    _logger.info("\n" + "="*80)
+    _logger.info("\n" + "=" * 80)
     _logger.info("METADATA DISTRIBUTION ACROSS SPLITS")
-    _logger.info("="*80)
+    _logger.info("=" * 80)
 
     # Load all target maps
     target_maps = {}
     metadata_dir = ROOT / "metadata/targets"
     target_files = [
-        "age_open", "sex", "Memory_Tr35_60y", "FluidIQ_Tr35_60y",
-        "CrystIQ_Tr35_60y", "neo_n", "neo_e", "neo_o", "neo_a", "neo_c"
+        "age_open",
+        "sex",
+        "Memory_Tr35_60y",
+        "FluidIQ_Tr35_60y",
+        "CrystIQ_Tr35_60y",
+        "neo_n",
+        "neo_e",
+        "neo_o",
+        "neo_a",
+        "neo_c",
     ]
 
     for target in target_files:
@@ -273,8 +274,8 @@ def main(args):
                         counts[v] = counts.get(v, 0) + 1
                     total = len(values)
                     _logger.info(
-                        f"  {split}: n={total}, F={counts[0]} ({100*counts[0]/total:.1f}%), "
-                        f"M={counts[1]} ({100*counts[1]/total:.1f}%)"
+                        f"  {split}: n={total}, F={counts[0]} ({100 * counts[0] / total:.1f}%), "
+                        f"M={counts[1]} ({100 * counts[1] / total:.1f}%)"
                     )
                 else:
                     # Continuous/binned targets
@@ -282,8 +283,8 @@ def main(args):
                     if "bins" in target_info:
                         # Show bin distribution
                         bins = target_info["bins"]
-                        bin_counts = np.bincount(values_array, minlength=len(bins)+1)
-                        bin_pcts = [f"{100*c/len(values):.1f}%" for c in bin_counts]
+                        bin_counts = np.bincount(values_array, minlength=len(bins) + 1)
+                        bin_pcts = [f"{100 * c / len(values):.1f}%" for c in bin_counts]
                         _logger.info(
                             f"  {split}: n={len(values)}, bins={bin_counts.tolist()}, "
                             f"pcts={bin_pcts}"
@@ -293,15 +294,12 @@ def main(args):
                             f"  {split}: n={len(values)}, dist={np.bincount(values_array).tolist()}"
                         )
 
-        _logger.info("\n" + "="*80)
+        _logger.info("\n" + "=" * 80)
     else:
         _logger.warning("No target metadata found at %s", metadata_dir)
 
     # Load reader for target space
-    if args.space == "a424":
-        reader = readers.a424_reader(cifti=True)
-    else:
-        reader = readers.READER_DICT[args.space]()
+    reader = readers.READER_DICT[args.space]()
     dim = readers.DATA_DIMS[args.space]
     _logger.info("Using reader for space '%s' with dimension: %d", args.space, dim)
 
@@ -375,7 +373,9 @@ def generate_samples(samples: list[dict], *, reader, dim: int):
                 else:
                     _logger.warning(
                         "Path %s has fewer TRs than expected (%d < %d); skipping.",
-                        path, T, window_size
+                        path,
+                        T,
+                        window_size,
                     )
                     continue
             else:
@@ -421,20 +421,16 @@ if __name__ == "__main__":
         type=str,
         default="flat",
         choices=list(readers.READER_DICT),
-        help="Target anatomical space for processing (default: flat)"
+        help="Target anatomical space for processing (default: flat)",
     )
     parser.add_argument(
-        "--num_proc",
-        "-j",
-        type=int,
-        default=32,
-        help="Number of parallel processes"
+        "--num_proc", "-j", type=int, default=32, help="Number of parallel processes"
     )
     parser.add_argument(
         "--writer_batch_size",
         type=int,
         default=None,
-        help="Arrow writer batch size (default: 16 for flat, otherwise datasets default)"
+        help="Arrow writer batch size (default: 16 for flat, otherwise datasets default)",
     )
     args = parser.parse_args()
     sys.exit(main(args))

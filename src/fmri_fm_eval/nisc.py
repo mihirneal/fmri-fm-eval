@@ -26,6 +26,7 @@ import scipy.signal
 from matplotlib.tri import Triangulation
 from matplotlib.colors import LinearSegmentedColormap
 from nibabel.cifti2 import BrainModelAxis, Cifti2Image
+from nilearn.image import resample_img
 from scipy.sparse import coo_array
 from scipy.spatial import Delaunay
 from sklearn.neighbors import NearestNeighbors
@@ -43,6 +44,19 @@ FSLR64K_NUM_VERTICES = 64984
 def read_nifti_data(path: str | Path) -> np.ndarray:
     """Read nifti array data as shape (T, Z, Y, X)."""
     img = nib.load(path)
+    # [X, Y, Z, T] F-order -> [T, Z, Y, X] C-order
+    data = np.ascontiguousarray(img.get_fdata().T)
+    return data
+
+
+def read_mni152_2mm_data(
+    path: str | Path,
+    interpolation: Literal["continuous", "linear", "nearest"] = "continuous",
+) -> np.ndarray:
+    """Read MNI152 2mm nifti data as shape (T, Z, Y, X) with orientation RAS."""
+    img = nib.load(path)
+    img = ensure_mni152_2mm_ras(img, interpolation=interpolation)
+    # [X, Y, Z, T] F-order -> [T, Z, Y, X] C-order
     data = np.ascontiguousarray(img.get_fdata().T)
     return data
 
@@ -104,6 +118,53 @@ def read_gifti_surf_data(path: str | Path) -> np.ndarray:
     return series
 
 
+MNI152_2MM_SHAPE = (91, 109, 91)
+MNI152_2MM_AFFINE = (
+    (2.0, 0.0, 0.0, -90.0),
+    (0.0, 2.0, 0.0, -126.0),
+    (0.0, 0.0, 2.0, -72.0),
+    (0.0, 0.0, 0.0, 1.0),
+)
+
+
+def ensure_mni152_2mm_ras(
+    img: nib.Nifti1Image,
+    interpolation: Literal["continuous", "linear", "nearest"] = "continuous",
+):
+    """
+    Ensure that an image is in MNI 152 2mm space with RAS+ orientation.
+
+    Returns an image with shape (91, 109, 91) and affine:
+
+        |  2.0   0.0   0.0  -90.0 |
+        |  0.0   2.0   0.0 -126.0 |
+        |  0.0   0.0   2.0  -72.0 |
+        |  0.0   0.0   0.0    1.0 |
+
+    Note that several standard sources uses flipped LAS orientation:
+    - FSL distributed standard template
+    - HCP preprocessed outputs
+    - Schaefer MNI ROIs
+    - A424 MNI ROI
+    - Schaefer 400 Tian S3 Buckner 7 ROI
+
+    Other sources use RAS orientation:
+    - fMRIPrep preprocessed outputs
+    - templateflow ROIs
+    - nilearn templates
+    """
+    img = nib.as_closest_canonical(img)
+    img = resample_img(
+        img,
+        target_affine=np.array(MNI152_2MM_AFFINE),
+        target_shape=MNI152_2MM_SHAPE,
+        interpolation=interpolation,
+        force_resample=True,
+        copy_header=True,
+    )
+    return img
+
+
 # Parcellation utils
 
 
@@ -163,7 +224,7 @@ def fetch_schaefer_tian(
     return path
 
 
-def fetch_a424(cifti: bool = False) -> Path:
+def fetch_a424(cifti: bool = True) -> Path:
     base_url = (
         "https://github.com/emergelab/hierarchical-brain-networks/raw/refs/heads/master/brainmaps"
     )
@@ -280,16 +341,16 @@ def parcel_average_schaefer_tian_fslr91k(num_rois: int, scale: int, **kwargs):
     return parcavg
 
 
-def parcel_average_a424(cifti: bool = False, **kwargs):
-    path = fetch_a424(cifti=cifti)
-    parc = read_cifti_data(path).squeeze(0) if cifti else read_nifti_data(path)
+def parcel_average_a424(**kwargs):
+    path = fetch_a424(cifti=True)
+    parc = read_cifti_data(path).squeeze(0)
     parcavg = ParcelAverage(parc, **kwargs)
     return parcavg
 
 
 def parcel_average_schaefer400_tians3_buckner7(**kwargs):
     path = fetch_schaefer400_tians3_buckner7()
-    parc = read_nifti_data(path)
+    parc = read_mni152_2mm_data(path, interpolation="nearest")
     parcavg = ParcelAverage(parc, **kwargs)
     return parcavg
 
