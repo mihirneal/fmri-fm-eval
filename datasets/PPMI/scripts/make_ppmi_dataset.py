@@ -42,8 +42,8 @@ def main(args):
     outdir = out_root / f"ppmi.{args.space}.arrow"
     _logger.info("Generating dataset: %s", outdir)
     if outdir.exists():
-        _logger.warning("Output %s exists; exiting.", outdir)
-        return 1
+        _logger.info("Output %s exists; exiting.", outdir)
+        return
 
     # load curated subjects
     curated_df = pd.read_csv(ROOT / "metadata/PPMI_curated.csv", dtype={"Subject": str})
@@ -58,7 +58,7 @@ def main(args):
             curated_paths[sub] = path
     curated_paths = list(curated_paths.values())
 
-    if args.space in {"a424", "mni", "mni_cortex", "schaefer400_tians3_buckner7"}:
+    if args.space in readers.VOLUME_SPACES:
         suffix = "_space-MNI152NLin6Asym_res-2_desc-preproc_bold.nii.gz"
     else:
         suffix = "_space-fsLR_den-91k_bold.dtseries.nii"

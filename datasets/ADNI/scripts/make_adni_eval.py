@@ -100,7 +100,7 @@ def main(args):
         ses = scandate_to_ses(scandate)
 
         # Build file path based on space
-        if args.space in {"mni", "mni_cortex", "schaefer400_tians3_buckner7"}:
+        if args.space in readers.VOLUME_SPACES:
             # Volumetric MNI path
             file_path = (
                 ADNI_OUTPUT
@@ -136,10 +136,7 @@ def main(args):
         _logger.info("Num samples (%s): %d", split, len(samples))
 
     # Load reader for target space
-    if args.space == "a424":
-        reader = readers.a424_reader(cifti=True)
-    else:
-        reader = readers.READER_DICT[args.space]()
+    reader = readers.READER_DICT[args.space]()
     dim = readers.DATA_DIMS[args.space]
     _logger.info("Using reader for space '%s' with dimension: %d", args.space, dim)
 
