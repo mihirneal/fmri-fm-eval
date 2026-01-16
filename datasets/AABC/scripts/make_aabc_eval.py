@@ -32,12 +32,7 @@ logging.getLogger("nibabel").setLevel(logging.ERROR)
 _logger = logging.getLogger(__name__)
 
 ROOT = Path(__file__).parents[1]
-AABC_ROOT = os.getenv("AABC_ROOT")
-assert AABC_ROOT is not None, (
-    "AABC_ROOT environment variable is not set. "
-    "Please set it to the directory containing AABC raw data. "
-)
-AABC_ROOT = Path(AABC_ROOT)
+AABC_ROOT = ROOT / "data" / "raw"
 # Evaluation pool uses batches 10-19 (10 batches), then split 80/10/10
 # Uses only 1 visit per subject (randomly selected) to maintain data quantity
 # Batches 0-9 are reserved for pretraining
@@ -53,12 +48,23 @@ SPLIT_RATIOS = {
 
 # AABC TR (constant across all tasks)
 AABC_TR = 0.72
+hfds.config.DEFAULT_MAX_BATCH_SIZE = 256
 
-# Task configurations: (directory_name, file_suffix, window_size, max_windows)
-# REST only: single 500-TR window per subject (no multiple windows)
-TASK_CONFIG = {
-    "REST": ("rfMRI_REST", "rfMRI_REST_Atlas_MSMAll_hp0_clean_rclean_tclean.dtseries.nii", 500, 1),
-}
+
+def get_task_config(space: str) -> dict:
+    """Get task configuration with appropriate file suffix based on space.
+
+    For volumetric spaces (mni, mni_cortex, schaefer400_tians3_buckner7), use NIfTI files.
+    For surface/parcellation spaces use CIFTI files.
+    """
+    if space in readers.VOLUME_SPACES:
+        suffix = "rfMRI_REST_hp0_clean_rclean_tclean.nii.gz"
+    else:
+        suffix = "rfMRI_REST_Atlas_MSMAll_hp0_clean_rclean_tclean.dtseries.nii"
+
+    return {
+        "REST": ("rfMRI_REST", suffix, 500, 1),
+    }
 
 
 def main(args):
@@ -67,16 +73,6 @@ def main(args):
     if outdir.exists():
         _logger.warning("Output %s exists; exiting.", outdir)
         return 1
-
-    if args.space == "mni":
-        has_nifti = next(AABC_ROOT.rglob("*.nii.gz"), None) is not None
-        if not has_nifti:
-            _logger.warning(
-                "Space '%s' requires volumetric NIfTI inputs, but none were found under %s. Skipping.",
-                args.space,
-                AABC_ROOT,
-            )
-            return 0
 
     # Load subject batch splits
     with (ROOT / "metadata/aabc_subject_batch_splits.json").open() as f:
@@ -108,7 +104,7 @@ def main(args):
                 continue
             # Randomly select ONE visit per subject (deterministic due to fixed seed)
             selected_visit = rng.choice(visits)
-            for task, (task_dir, suffix, window_size, max_windows) in TASK_CONFIG.items():
+            for task, (task_dir, suffix, window_size, max_windows) in get_task_config(args.space).items():
                 path = f"{sub}_{selected_visit}_MR/MNINonLinear/Results/{task_dir}/{suffix}"
                 fullpath = AABC_ROOT / path
                 if fullpath.exists():
@@ -322,8 +318,11 @@ def main(args):
     )
 
     writer_batch_size = args.writer_batch_size
-    if writer_batch_size is None and args.space == "flat":
-        writer_batch_size = 16
+    if writer_batch_size is None:
+        if args.space == "flat":
+            writer_batch_size = 16
+        elif args.space in {"mni", "mni_cortex"}:
+            writer_batch_size = 8
 
     # Generate datasets
     with tempfile.TemporaryDirectory(prefix="huggingface-") as tmpdir:
@@ -337,6 +336,8 @@ def main(args):
                 split=hfds.NamedSplit(split),
                 cache_dir=tmpdir,
                 writer_batch_size=writer_batch_size,
+                # otherwise fingerprint crashes on mni space, ig bc of hashing the reader
+                fingerprint=f"aabc-{args.space}-{split}",
             )
         dataset = hfds.DatasetDict(dataset_dict)
 
