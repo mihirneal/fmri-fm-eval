@@ -13,6 +13,7 @@ NUM_PROC=${NUM_PROC:-32}
 SPACES=(
     "schaefer400"
     "schaefer400_tians3"
+    "schaefer400_tians3_buckner7"
     "flat"
     "a424"
     "mni"
