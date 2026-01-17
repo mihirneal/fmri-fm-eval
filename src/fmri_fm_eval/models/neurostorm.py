@@ -6,7 +6,6 @@ NeuroSTORM: Towards a general-purpose foundation model for fMRI analysis
 
 import torch.nn as nn
 from torch import Tensor
-import torch.nn.functional as F
 
 from fmri_fm_eval.models.base import Embeddings
 from fmri_fm_eval.models.registry import register_model
@@ -24,8 +23,10 @@ import shutil
 
 try:
     from neurostorm.models.lightning_model import LightningModel
-    from neurostorm.datasets.preprocessing_volume import select_middle_96, spatial_resampling, temporal_resampling # original functions from: https://github.com/CUHK-AIM-Group/NeuroSTORM/blob/5bb4f7c844ed7544f95cd934eece69b390a55ea4/datasets/preprocessing_volume.py#L12C1-L69C26
-    from neurostorm.datasets.fmri_datasets import pad_to_96, resize_volume
+
+    # original functions from: https://github.com/CUHK-AIM-Group/NeuroSTORM/blob/5bb4f7c844ed7544f95cd934eece69b390a55ea4/datasets/preprocessing_volume.py#L12C1-L69C26
+    from neurostorm.datasets.preprocessing_volume import select_middle_96, temporal_resampling
+    from neurostorm.datasets.fmri_datasets import pad_to_96
 
 except ImportError as exc:
     raise ImportError(
@@ -42,8 +43,8 @@ NEUROSTORM_VARIANTS = {
     "0.5": "fmrifound/pt_fmrifound_mae_ratio0.5.ckpt",
 }
 
-def fetch_neurostorm_checkpoint(variant: str) -> Path:
 
+def fetch_neurostorm_checkpoint(variant: str) -> Path:
     repo_id = "zxcvb20001/NeuroSTORM"
     filename = NEUROSTORM_VARIANTS[variant]
 
@@ -75,14 +76,13 @@ class NeuroStormWrapper(nn.Module):
 
         self.ckpt_path = fetch_neurostorm_checkpoint(variant)
 
-        dm = _DummyDataModule()
-
         ckpt = torch.load(self.ckpt_path, map_location="cpu")
 
         # patch hyperparameters
         hparams = ckpt["hyper_parameters"]
-        hparams["print_flops"] = False # missing required key
-        hparams["model"] = "neurostorm" # overwrite model name, current checkpoint has "swin4d_mae" which is not a valid model name here: https://github.com/CUHK-AIM-Group/NeuroSTORM/blob/main/models/load_model.py but the keys match the 'neurostorm' model
+        hparams["print_flops"] = False  # missing required key
+        # overwrite model name, current checkpoint has "swin4d_mae" which is not a valid model name here: https://github.com/CUHK-AIM-Group/NeuroSTORM/blob/main/models/load_model.py but the keys match the 'neurostorm' model
+        hparams["model"] = "neurostorm"
         model = LightningModel(**hparams, data_module=_DummyDataModule())
 
         # load weights
@@ -94,8 +94,8 @@ class NeuroStormWrapper(nn.Module):
         self.expected_seq_len = 20
 
     def monkey_patch_forward_encoder(self):
-
-        def forward_encoder(self, x, apply_mask: bool = True): # patch method since original code always applies mask: https://github.com/CUHK-AIM-Group/NeuroSTORM/blob/5bb4f7c844ed7544f95cd934eece69b390a55ea4/models/neurostorm.py#L1191C1-L1205C1
+        def forward_encoder(self, x, apply_mask: bool = True):
+            # patch method since original code always applies mask: https://github.com/CUHK-AIM-Group/NeuroSTORM/blob/5bb4f7c844ed7544f95cd934eece69b390a55ea4/models/neurostorm.py#L1191C1-L1205C1
             x = self.patch_embed(x)
             mask = None
 
@@ -119,7 +119,8 @@ class NeuroStormWrapper(nn.Module):
         T = num_windows * self.expected_seq_len
         x = rearrange(x[..., :T], "b c x y z (w t) -> (b w) c x y z t", w=num_windows)
 
-        feats, mask = self.backbone.forward_encoder(x, apply_mask=False)  # feats have shape (B, channels, H, W, D, T) (B, 288, 2, 2, 2, 20)
+        # feats have shape (B, channels, H, W, D, T) (B, 288, 2, 2, 2, 20)
+        feats, mask = self.backbone.forward_encoder(x, apply_mask=False)
 
         if feats.isnan().sum() > 0:
             print("NaNs in feats")
@@ -133,6 +134,7 @@ class NeuroStormWrapper(nn.Module):
             reg_embeds=None,
             patch_embeds=feats,
         )
+
 
 class NeuroStormTransform:
     """
@@ -181,7 +183,7 @@ class NeuroStormTransform:
         bold = sample["bold"] * sample["std"] + sample["mean"]
 
         Z, Y, X = self.mask.shape
-        tr = sample["tr"]
+        tr = float(sample["tr"])
 
         # unflatten bold to (X, Y, Z, T)
         T, V = bold.shape
@@ -190,24 +192,29 @@ class NeuroStormTransform:
         vol[:, mask] = bold
         vol = rearrange(vol, "t z y x -> x y z t")
 
+        # flip x axis. the provided MNI data are in RAS orientation, but the model
+        # expects HCP (FSL) convention LAS.
+        # https://github.com/CUHK-AIM-Group/NeuroSTORM/blob/5bb4f7c844ed7544f95cd934eece69b390a55ea4/datasets/preprocessing_volume.py#L76
+        vol = torch.flip(vol, (0,))
+
         header_handler = SimpleNamespace(get_zooms=lambda: (2.0, 2.0, 2.0, tr))
-        vol = np.array(vol) # the functions expect numpy arrays
-        vol = spatial_resampling(vol, header_handler) # is all the data already on 2mm, if so this line is a not needed, if not we'll need to pass that info to the samples
+        vol = vol.numpy()  # the functions expect numpy arrays
+        # the data is already resampled to 2mm as the model expects, so we skip spatial resampling
         vol = temporal_resampling(vol, header_handler)
         vol = select_middle_96(vol)
-        vol = torch.from_numpy(vol) # convert back to torch
-
-        background = vol == 0 # get background https://github.com/CUHK-AIM-Group/NeuroSTORM/blob/5bb4f7c844ed7544f95cd934eece69b390a55ea4/datasets/preprocessing_volume.py#L94
-        vol[vol<0] = 0 # every negative value is set to 0 https://github.com/CUHK-AIM-Group/NeuroSTORM/blob/5bb4f7c844ed7544f95cd934eece69b390a55ea4/datasets/preprocessing_volume.py#L119
+        vol = torch.from_numpy(vol)  # convert back to torch
+        # get background https://github.com/CUHK-AIM-Group/NeuroSTORM/blob/5bb4f7c844ed7544f95cd934eece69b390a55ea4/datasets/preprocessing_volume.py#L94
+        background = vol == 0
+        # every negative value is set to 0 https://github.com/CUHK-AIM-Group/NeuroSTORM/blob/5bb4f7c844ed7544f95cd934eece69b390a55ea4/datasets/preprocessing_volume.py#L119
+        vol[vol < 0] = 0
 
         # global z-score https://github.com/CUHK-AIM-Group/NeuroSTORM/blob/5bb4f7c844ed7544f95cd934eece69b390a55ea4/datasets/preprocessing_volume.py#L123C1-L126C54
         vol = (vol - vol[~background].mean()) / vol[~background].std()
 
-        vol_g = torch.empty(vol.shape)
-        vol_g[background] = vol[~background].min().item() #https://github.com/CUHK-AIM-Group/NeuroSTORM/blob/5bb4f7c844ed7544f95cd934eece69b390a55ea4/datasets/preprocessing_volume.py#L130C5-L132C54
-        vol_g[~background] = vol[~background]
+        # https://github.com/CUHK-AIM-Group/NeuroSTORM/blob/5bb4f7c844ed7544f95cd934eece69b390a55ea4/datasets/preprocessing_volume.py#L130C5-L132C54
+        vol[background] = vol[~background].min().item()
 
-        T = vol.shape[3] # get T after resampling
+        T = vol.shape[3]  # get T after resampling
         # Pad if too short - repeat mean (consistent with other models)
         if T < self.expected_seq_len:
             mean = vol.mean(dim=3, keepdim=True).repeat(1, 1, 1, self.expected_seq_len - T)
@@ -218,8 +225,9 @@ class NeuroStormTransform:
         T_cropped = num_windows * self.expected_seq_len
         vol = vol[..., :T_cropped]
 
-        volume = rearrange(vol, "x y z t -> 1 x y z t") # include the channel dimension
-        volume = pad_to_96(volume) # pad to 96x96x96 https://github.com/CUHK-AIM-Group/NeuroSTORM/blob/5bb4f7c844ed7544f95cd934eece69b390a55ea4/datasets/fmri_datasets.py#L12C1-L21C13
+        volume = rearrange(vol, "x y z t -> 1 x y z t")  # include the channel dimension
+        # pad to 96x96x96 https://github.com/CUHK-AIM-Group/NeuroSTORM/blob/5bb4f7c844ed7544f95cd934eece69b390a55ea4/datasets/fmri_datasets.py#L12C1-L21C13
+        volume = pad_to_96(volume)
         # volume = resize_volume(volume, (self.spatial_target, self.spatial_target, self.spatial_target, self.expected_seq_len)) # this is not needed I think, we're already on the dimension required: https://github.com/CUHK-AIM-Group/NeuroSTORM/blob/5bb4f7c844ed7544f95cd934eece69b390a55ea4/datasets/fmri_datasets.py#L26C1-L56C17
         # with_voxel_norm is False on the checkpoint: https://github.com/CUHK-AIM-Group/NeuroSTORM/blob/5bb4f7c844ed7544f95cd934eece69b390a55ea4/datasets/fmri_datasets.py#L117
 
@@ -234,7 +242,7 @@ class NeuroStormTransform:
 def neurostorm_mae_0p5() -> tuple[NeuroStormTransform, NeuroStormWrapper]:
     return NeuroStormTransform(), NeuroStormWrapper(variant="0.5")
 
+
 @register_model
 def neurostorm_mae_0p8() -> tuple[NeuroStormTransform, NeuroStormWrapper]:
     return NeuroStormTransform(), NeuroStormWrapper(variant="0.8")
-

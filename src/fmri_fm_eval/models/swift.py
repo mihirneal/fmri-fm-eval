@@ -183,6 +183,10 @@ class SwiftTransform:
         volume[:, mask] = bold  # Assign flattened voxels to mask positions
         volume = rearrange(volume, "t z y x -> t x y z")
 
+        # flip x axis. the provided MNI data are in RAS orientation, but the model
+        # expects HCP (FSL) convention LAS.
+        volume = torch.flip(volume, (1,))
+
         # center crop or pad
         # fixed padding from original code for mni152 2mm volume
         # (91, 109, 91) -> (96, 96, 96)
